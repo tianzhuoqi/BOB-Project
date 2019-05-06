@@ -1,0 +1,41 @@
+require("Proto/scene_pb")
+local ListCell = require("Game/Module/UICommon/ListCell")
+
+local RefineryListItem = register("RefineryListItem", ListCell)
+
+function RefineryListItem:OnClick()
+    Facade:SendNotification(NotiConst.Notify_RefinerySelectMine, self.dataIndex)
+end
+
+function RefineryListItem:Awake(gameObject)
+    RefineryListItem.super.Awake(self, gameObject)
+    self.planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+    self.storehouseProxy = Facade:RetrieveProxy(NotiConst.Proxy_Storehouse)
+
+    self.n_icon = self:FindComponent("n_icon", "UITexture")
+    self.n_Quality = self:FindComponent("n_Quality", "UISprite")
+    self.n_Label_Purity = self:FindComponent("Purity/n_Label_Purity", "UILabel")
+    self.n_CurMineName01 = self:FindComponent("n_CurMineName01", "UILabel")
+    self.n_NumLabel = self:FindComponent("n_NumLabel", "UILabel")
+    self.n_Select = self:FindComponent("n_Select", "UISprite")
+end
+
+function RefineryListItem:DrawCell(index, cellIndex, itemsCount)
+    self.dataIndex = cellIndex * itemsCount + index + 1
+    self.data = self.storehouseProxy:GetPackageDataByIndex(self.dataIndex)
+    self.configData = self.storehouseProxy:GetItemConfigData(self.data.id)
+    self.refineryInfo = self.planetaryProxy:GetCurBuildingOper().dynamicData.item
+    if self.refineryInfo ~= nil and  self.refineryInfo.id == self.data.id then
+        self.n_Select.gameObject:SetActive(true)
+    else
+        self.n_Select.gameObject:SetActive(false)
+    end
+
+    self.n_Label_Purity.text = self.data.baseValue
+    self.n_NumLabel.text = self.data.num
+
+    local name_s = self.configData.relation["name_s"]
+    self.n_CurMineName01.text = self.configData.data[self.configData.EVar[name_s]]
+end
+
+return RefineryListItem

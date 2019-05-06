@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28d7f4783592a124aa9ac21a70c70520, type: 3}
+  m_Name: XcodeProjectSetting
+  m_EditorClassIdentifier: 
+  EnableBitCode: 0
+  EnableCppEcceptions: 1
+  EnableCppRtti: 1
+  EnableObjcExceptions: 1
+  EnableGameCenter: 0
+  EntitlementFilePath: hw.entitlements
+  CopyDirectoryPath: Assets/Editor/XCodeAPI/Frameworks
+  FrameworkList:
+  - name: StoreKit.framework
+    weak: 0
+  - name: SystemConfiguration.framework
+    weak: 0
+  - name: Security.framework
+    weak: 0
+  - name: JavaScriptCore.framework
+    weak: 1
+  TbdList:
+  - libz.tbd
+  - libc++.tbd
+  LinkerFlagArray:
+  - -ObjC
+  FrameworkSearchPathArray:
+  - $(inherited)
+  - $(PROJECT_DIR)/Frameworks
+  CompilerFlagsSetList: []
+  CopeFilesList: []
+  ApplicationQueriesSchemes: []
+  privacySensiticeData:
+  - key: NSCalendarsUsageDescription
+    description: Calendar usage required for in-game events.
+  - key: NSPhotoLibraryUsageDescription
+    description: Photo Library usage required for sharing in-game footage & screenshots.
+  - key: NSMicrophoneUsageDescription
+    description: Microphone usage required for live broadcasting service.
+  - key: NSCameraUsageDescription
+    description: Camera usage required for live broadcasting service.
+  BundleUrlTypeList: []
+  BackgroundModes: []

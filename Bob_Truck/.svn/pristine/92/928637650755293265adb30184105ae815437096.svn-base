@@ -1,0 +1,18 @@
+local GlobalProxy = class("GlobalProxy",Proxy)
+
+function GlobalProxy:OnRegister()
+
+end
+
+function GlobalProxy:OnRemove()
+
+end
+--设置服务器同步的时间
+function GlobalProxy:SetSystemTimestamp(timestamp)
+    self.m_data.timestampOffset = UnityEngine.Time.time
+    --时间比服务器时间慢一秒
+    self.m_data.systemTimestamp = timestamp + 1
+    Facade:SendNotification(NotiConst.Notify_SystemTimestampUpdated)
+end
+
+return GlobalProxy

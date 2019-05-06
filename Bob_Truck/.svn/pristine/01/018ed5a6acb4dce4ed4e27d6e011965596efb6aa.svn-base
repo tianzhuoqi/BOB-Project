@@ -1,0 +1,23 @@
+local languageMap = {
+    ["FExploreTitle"] = "My Fleet",
+    ["FExploreCCapabilities"] = "Capabilities:{0}",
+    ["FExploreCPosition"] = "Position:{0}",
+    ["FExploreFuel"] = "Fuel:{0}/{1}",
+    ["FDirectiveTitle"] = "Fleet Directive",
+    ["FDirectiveListName"] = "Fleet Mining",
+    ["FDirectiveLim"] = "Mining is permitted only in unoccupied areas.",
+    ["FDirectiveIngFleetName"] = "Fleet {0}",
+    ["FDirectiveIngFleetWorking"] = "is Working",
+    ["FDirectiveIngCancel"] = "Cancel",
+    ["FDirectiveSubName"] = "Fleet {0}",
+    ["FDirectiveSubNum"] = "{0}/{1}",
+    ["FDirectiveSubMiningSpeed"] = "Mining Speed:{0}",
+    ["FDirectiveSubMiningCap"] = "Capacity:",
+    ["FListTitle"] = "Fleet List",
+    ["FListOperateBtn"] = "Operate",
+    ["FListFoldBtn"] = "Fold",
+    ["FListLookOver"] = "Look Over",
+    ["FTip01"] = "",
+    ["FTip02"] = "",
+}
+return languageMap

@@ -1,0 +1,14 @@
+local SPlanetarySystemStartCommand = class("SPlanetarySystemStartCommand", SimpleCommand)
+
+
+SPlanetarySystemStartCommand.MODULE_NAME = NotiConst.Command_SPlanetarySystemStart
+function SPlanetarySystemStartCommand:Execute(notice)
+	-- send rpc command
+	Facade:OverLayerPanel("UIPlayerResourcePanel")
+	Facade:SetHomePagePoint()
+	Facade:ReplacePanel("PlanetaryPanel")
+	
+end
+
+
+return SPlanetarySystemStartCommand

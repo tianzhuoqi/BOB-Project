@@ -1,0 +1,8 @@
+local languageMap = {
+    ["BLTitle"] = "建筑列表",
+    ["BLIndustryTab"] = "工业建筑",
+    ["BLResourceTab"] = "资源建筑",
+    ["BLHumanTab"] = "生活建筑",
+    ["BLDefenseTab"] = "防御建筑",
+}
+return languageMap

@@ -1,0 +1,26 @@
+local WorldPanelBinder = class("WorldPanelBinder");
+
+function WorldPanelBinder:ctor(gameObject)
+	local transform = gameObject.transform;
+	self.m_GroupPopup = transform:Find("m_GroupPopup").gameObject;
+	self.m_btnClickClose = transform:Find("m_GroupPopup/m_btnClickClose").gameObject;
+	self.m_Sprite_sign = transform:Find("m_GroupPopup/ringFrm/m_Sprite_sign"):GetComponent("UISprite");
+	self.m_GroupExportInfo = transform:Find("Anchor_LeftTop/m_GroupExportInfo").gameObject;
+	self.m_ExploreInfoItem = transform:Find("Anchor_LeftTop/m_GroupExportInfo/m_ExploreInfoItem").gameObject;
+	self.m_ButtonMarkList = transform:Find("Anchor_LeftRight/m_ButtonMarkList"):GetComponent("UIButton");
+	self.m_GroupGM = transform:Find("Anchor_Bottom/m_GroupGM").gameObject;
+	self.m_EditboxGM = transform:Find("Anchor_Bottom/m_GroupGM/m_EditboxGM"):GetComponent("UIInput");
+	self.m_ButtonGMOK = transform:Find("Anchor_Bottom/m_GroupGM/m_ButtonGMOK"):GetComponent("UIButton");
+	self.m_ButtonMod = transform:Find("Anchor_Bottom/m_GroupGM/m_ButtonMod"):GetComponent("UIButton");
+	self.m_ButtonMap = transform:Find("Anchor_Bottom/m_ButtonMap"):GetComponent("UIButton");
+	self.m_Sprite = transform:Find("Anchor_Bottom/m_Sprite"):GetComponent("UISprite");
+	self.m_FleetCount = transform:Find("Anchor_Bottom/m_Sprite/m_FleetCount"):GetComponent("UILabel");
+	self.m_NodeInfo = transform:Find("Anchor_Bottom/m_NodeInfo").gameObject;
+	self.m_ButtonGoto = transform:Find("Anchor_Bottom/m_NodeInfo/m_ButtonGoto"):GetComponent("UIButton");
+	self.m_ButtonView = transform:Find("Anchor_Bottom/m_NodeInfo/m_ButtonView"):GetComponent("UIButton");
+	self.m_ButtonFleetDirectiveButton = transform:Find("Anchor_Bottom/m_NodeInfo/m_ButtonFleetDirectiveButton"):GetComponent("UIButton");
+	self.m_ButtonMark = transform:Find("Anchor_Bottom/m_NodeInfo/m_ButtonMark"):GetComponent("UIButton");
+	self.m_MarkLabel = transform:Find("Anchor_Bottom/m_NodeInfo/m_ButtonMark/m_MarkLabel"):GetComponent("UILabel");
+	self.m_Label_name = transform:Find("Anchor_Bottom/m_NodeInfo/m_Label_name"):GetComponent("UILabel");
+end
+return WorldPanelBinder

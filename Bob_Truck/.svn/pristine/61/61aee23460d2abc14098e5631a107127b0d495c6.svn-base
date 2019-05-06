@@ -1,0 +1,48 @@
+
+--
+
+local BuildingAttributeExtractor = register("BuildingAttributeExtractor")
+
+function BuildingAttributeExtractor:GetBuildingBaseAttributeList()
+    return {
+        bldg_size_n = {
+            CNKeyV = "ATRBBuildingArea"
+        },
+        cult_pt_n = {
+            CNKeyV = "ATRBCivilization"
+        },
+        hr_slot_qty_n = {
+            CNKeyV = "ATRBHumanSlot"
+        },
+        buff_pro_n = {
+            CNKeyV = "ATRBBtP"
+        },
+        max_labor_uk_n = {
+            CNKeyV = "ATRBEmployeeLim"
+        },
+        ele_regen_rate_n = {
+            CNKeyV = "ATRBChargeV",
+            CNKeyN = "ATRBChargeN"
+        },
+        max_ele_cap_n = {
+            CNKeyV = "ATRBCapV",
+            CNKeyN = "ATRBCapN"
+        },
+        max_item_cap_n = {
+            CNKeyV = "ATRBCapacityV",
+            CNKeyN = "ATRBCapacityN"
+        },
+        affact_rng_n = {
+            CNKeyV = "ATRBRangeV",
+            CNKeyN = "ATRBRangeN"
+        },
+    }
+end
+
+function BuildingAttributeExtractor:GetBuildingSpAttributeList(buildingType)
+    if buildingType == common_pb.SPACESTATION then
+        return nil
+    elseif buildingType == common_pb.SPACESTATION then
+        return nil
+    end
+end

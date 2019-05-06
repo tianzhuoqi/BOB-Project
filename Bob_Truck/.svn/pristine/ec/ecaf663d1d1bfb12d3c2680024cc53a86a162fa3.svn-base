@@ -1,0 +1,9 @@
+local SLoginStartCommand = class("SLoginStartCommand", SimpleCommand)
+
+SLoginStartCommand.MODULE_NAME = NotiConst.Command_SLoginStart
+function SLoginStartCommand:Execute(notice)
+	Facade:ReplacePanel('LoginPanel')
+	
+end
+
+return SLoginStartCommand

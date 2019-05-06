@@ -1,0 +1,9 @@
+local languageMap = {
+    ["UpTitle"] = "",
+    ["UpVeryfy"] = "",
+    ["UpEffect"] = "",
+    ["UpTime"] = "",
+    ["UpConsume"] = "",
+    ["UpBtn"] = "",
+}
+return languageMap

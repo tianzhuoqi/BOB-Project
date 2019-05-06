@@ -1,0 +1,250 @@
+local SkillTreeMediator = class("SkillTreeMediator", MediatorDynamic)
+local planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+local storehouseProxy = Facade:RetrieveProxy(NotiConst.Proxy_Storehouse)
+local userDataProxy = Facade:RetrieveProxy(NotiConst.Package_UserData)
+function SkillTreeMediator:OnRegister()
+    self.uiBinder = self:GetViewComponent().uiBinder
+    self.skillTreeTableView = self.uiBinder.m_SubPanel:GetComponent("NTableView")
+    local luaclickEvent = NLuaClickEvent.Get(self.uiBinder.m_Sprite_SkillOperationBGBox.gameObject)
+    luaclickEvent:AddClick(self,self.CloseUpgradeView)
+    local luaclickEvent = NLuaClickEvent.Get(self.uiBinder.m_Button_Close.gameObject)
+    luaclickEvent:AddClick(self,self.BackPanel)
+    luaclickEvent = NLuaClickEvent.Get(self.uiBinder.m_Button_Info.gameObject)
+    luaclickEvent:AddClick(self,self.OpenDetailView)
+    luaclickEvent = NLuaClickEvent.Get(self.uiBinder.m_Sprite_DetailBG.gameObject)
+    luaclickEvent:AddClick(self,self.CloseDetailView)
+    luaclickEvent = NLuaClickEvent.Get(self.uiBinder.m_Button_Research.gameObject)
+    luaclickEvent:AddClick(self,self.OnClickReserchCallback)
+
+    self:RegisterObserver("InitSkillTree", "InitSkillTree")
+    self:RegisterObserver("showUpgradePanel","OpenUpgradeView")
+    self:RegisterObserver("isTechCanUpgrade","IsTechCanUpgrade")
+
+    ManagerNetMsgProcInst:AddS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.TECHFINISHED), self.TechFinishedCallback, self)
+    
+
+    self.skillTreetype = NotiConst.SkillTreeType.eSKILLTREE_Building
+end
+
+function SkillTreeMediator:ShowUI( )
+    self.uiBinder.m_GameObject_SkillOperation:SetActive(false)
+    self.uiBinder.m_GameObject_Accelerate:SetActive(false)
+    self.uiBinder.m_GameObject_Detail:SetActive(false)
+    self.curBuildingOper = planetaryProxy:GetCurBuildingOper()
+    self:SetTechUnlockProgress()
+end
+
+--科技树的显示
+function SkillTreeMediator:InitSkillTree(notify)
+    local index = notify:GetBody()
+    if index == 0 then
+        self.skillTreetype = NotiConst.SkillTreeType.eSKILLTREE_Building
+    elseif index == 1 then
+        self.skillTreetype = NotiConst.SkillTreeType.eSKILLTREE_Production
+    end
+    planetaryProxy:SetCurrentSelectSkillTreeType(self.skillTreetype)
+    planetaryProxy:SaveNeedShowSkillTreeId(self.skillTreetype)
+    
+    local count = planetaryProxy:GetNeedShowSkillTreeItemCount(self.skillTreetype)
+    self.skillTreeTableView:ScrollResetPosition()
+    Facade:SendNotification("ShowSkillTree",count)
+
+end
+
+function SkillTreeMediator:SetTechUnlockProgress()
+    local progress = planetaryProxy:GetTechUnlockProgress(self.skillTreetype)
+    self.uiBinder.m_Label_Aggregate.text = string.format( "建筑科技研究进度:%2d%% ",progress * 100)
+    self.uiBinder.m_Label_TechCount.text = string.format( "剩余科技点数 %d",userDataProxy:GetTechPoint())
+end
+
+--打开研究界面
+function SkillTreeMediator:OpenUpgradeView(notify)
+    local techId = notify:GetBody()
+    self.uiBinder.m_GameObject_SkillOperation:SetActive(true)
+    self.isCanUpgrade = true
+
+    local techConfigInfo = planetaryProxy:GetSkillTreeItemInConfig(techId)
+    local unlockData = planetaryProxy:GetUnlockSkillTreeItemData(techId)
+    local configData = techConfigInfo.data
+    local level = 0
+    if unlockData ~= nil then
+        techId = unlockData.techId
+        if unlockData.techStatus == 0 then
+            level = techId % 100
+        else
+            level = techId % 100 - 1
+        end
+    end
+    self.curBuildingOper.dynamicData.currentTechId = techId  
+    local evar = techConfigInfo.EVar
+    local name = configData[evar["tech_name_s"]]
+    local iconName = configData[evar["icon_name_s"]]
+    self.currentSelectTechdescription = configData[evar["tech_desp_s"]]
+    self.currentSelectTechMaxLevel = planetaryProxy:GetSkillMaxLevelInConfig(techId)
+    local param
+    local nextTechId,nexConfigData
+    if level <= 0 then              --表中没有0级的数据，0级时取得是1级的数据，techid也是1级的id
+        param = "0"
+        nextTechId = techId
+        nexConfigData = configData
+    else
+        param = configData[evar["tech_param_s"]]
+        nextTechId = math.floor(techId/100) * 100 + level + 1
+        nexConfigData = planetaryProxy:GetSkillTreeItemInConfig(nextTechId).data
+    end
+    local conditionCount = self:SaveTechUpgradeConditions(nextTechId,level)
+    Facade:SendNotification("ShowUpgradeCondition",conditionCount)
+
+    local nextParam = nexConfigData[evar["tech_param_s"]]
+    --local upgradeTime = nexConfigData[evar["time_cost_n"]]
+
+    self.uiBinder.m_Label_SkillTitle.text = name
+    self.uiBinder.m_Label_level.text = string.format("%d/%d",level,self.currentSelectTechMaxLevel)
+    self.uiBinder.m_Label_Desp.text = tostring(self.currentSelectTechdescription)
+    self.uiBinder.m_Label_CurrentLv.text = tostring(param)
+    self.uiBinder.m_Label_NextLv.text = tostring(nextParam)
+    --self.uiBinder.m_Label_Time.text = SecondToHours(upgradeTime)
+end
+
+function SkillTreeMediator:SaveTechUpgradeConditions(techId,level)
+    local prerequisiteIds = nil
+    if level <= 0 then
+        prerequisiteIds = planetaryProxy:GetPrerequisiteTechIds(techId)
+    end
+    local costItems = planetaryProxy:GetUpgradeCostItems(techId)
+    local conditions = {}
+    --type = 1:前置科技要求 2：消耗物品要求 3：科技点消耗要求 4：星辰消耗要求 5：等级要求
+    if prerequisiteIds ~= nil then
+        for i,v in ipairs(prerequisiteIds) do
+            local item = {}
+            item.type = 1   
+            item.data = v
+            table.insert(conditions,item)
+        end
+    end
+    if costItems ~= nil then
+        for i,v in ipairs(costItems) do
+            if v ~= nil and #v > 0 then
+                local item = {}
+                item.type = 2
+                item.data = v
+                table.insert(conditions,item )
+            end
+        end
+    end
+    local configData = planetaryProxy:GetSkillTreeItemInConfig(techId)
+    if configData ~= nil then
+        local userLevelCondition = configData.data[configData.EVar["user_lvl_req_n"]]
+        table.insert(conditions,{type = 5,data = userLevelCondition})
+        local starDustCondition = configData.data[configData.EVar["sd_cost_n"]]
+        table.insert(conditions,{type = 4,data = starDustCondition})
+        local techPointCondition = configData.data[configData.EVar["tp_cost_n"]]
+        table.insert(conditions,{type = 3,data = techPointCondition})
+    end
+    self.curBuildingOper.dynamicData.upgradeCondition = conditions
+    return #conditions
+end
+
+function SkillTreeMediator:IsTechCanUpgrade(notify)
+    local data = notify:GetBody()
+    if not data then
+        self.isCanUpgrade = false
+    end
+end
+
+function SkillTreeMediator:CloseUpgradeView( )
+    self.uiBinder.m_GameObject_SkillOperation:SetActive(false)
+end
+
+--TODO 暂时科技等级的限制由基地等级决定
+function SkillTreeMediator:CanUpgrade()
+    local techData = planetaryProxy:GetSkillTreeItemInConfig(self.curBuildingOper.dynamicData.currentTechId)
+    
+    local spaceStationLevel = 0
+    local buildingList = planetaryProxy:GetBuildingData()
+    for i,v in pairs(buildingList) do
+        local buildingConfigData = planetaryProxy:GetBuildingConifData(v.buildingConfigId)
+        local type = buildingConfigData.data[buildingConfigData.EVar["bldg_func_type_n"]]
+        if common_pb.SPACESTATION == type then
+            spaceStationLevel = planetaryProxy:GetBuildingLevel(v.buildingConfigId)
+            break
+        end
+    end
+
+    if spaceStationLevel >= techData.data[techData.EVar.user_lvl_req_n] then
+        return true
+    else
+        return false
+    end
+end
+
+--开始研究
+function SkillTreeMediator:OnClickReserchCallback()
+    --[[
+    if not self:CanUpgrade() then
+        OpenMessageBox(NotiConst.MessageBoxType.Tip,"人物等级不够，请先升级")
+        return
+    end
+]]
+    if not self.isCanUpgrade then
+        OpenMessageBox(NotiConst.MessageBoxType.Tip,"未满足研究条件")
+        return
+    end
+    ManagerNetMsgProcInst:AddS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.TECHLEVELUP), self.TechLevelUpCallback, self)
+    local TCSTechLevelUp = buildingTech_pb.TCSTechLevelUp()
+    TCSTechLevelUp.techId = self.curBuildingOper.dynamicData.currentTechId
+    NNetMgrInst:SendLuaNetMsg(common_pb.NETTYPELOBBY, common_pb.TECHLEVELUP, TCSTechLevelUp:SerializeToString())
+end
+
+function SkillTreeMediator:TechLevelUpCallback(sData)
+    if sData ~= nil then
+        local TSCTechLevelUp = buildingTech_pb.TSCTechLevelUp()
+        TSCTechLevelUp:MergeFromString(sData)
+        planetaryProxy:SetUnlockTechData(TSCTechLevelUp.technology)
+        storehouseProxy:UseItemByDatas(self.curBuildingOper.nodeId,TSCTechLevelUp.items)
+        userDataProxy:SetTechPoint(TSCTechLevelUp.techPoint)
+        userDataProxy:SetStarDust(TSCTechLevelUp.starDust)
+        userDataProxy:SendNotificationUpdatePlayerInfo()
+
+        self:CloseUpgradeView()
+        local count = planetaryProxy:GetNeedShowSkillTreeItemCount(self.skillTreetype)
+        Facade:SendNotification("ShowSkillTree",count)
+    end
+    ManagerNetMsgProcInst:RmvS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.TECHLEVELUP), self.TechLevelUpCallback)
+end
+
+--研究完成通知
+function SkillTreeMediator:TechFinishedCallback(sData)
+    if sData ~= nil then
+        local TSCTechFinished = buildingTech_pb.TSCTechFinished()
+        TSCTechFinished:MergeFromString(sData)
+        planetaryProxy:SetUnlockTechData(TSCTechFinished.technology)
+        local count = planetaryProxy:GetNeedShowSkillTreeItemCount(self.skillTreetype)
+        Facade:SendNotification("ShowSkillTree",count)
+        self:SetTechUnlockProgress()
+    end
+end
+
+--打开科技详情
+function SkillTreeMediator:OpenDetailView()
+    self.uiBinder.m_GameObject_SkillOperation:SetActive(false)
+    self.uiBinder.m_GameObject_Detail:SetActive(true)
+    self.uiBinder.m_Label_SubTitle2.text = tostring(self.currentSelectTechdescription)
+    self:SaveTechDetail()
+    Facade:SendNotification("ShowTechDetail",self.currentSelectTechMaxLevel)
+end
+
+function SkillTreeMediator:SaveTechDetail()
+    local datas = planetaryProxy:GetSameTechAllParam(self.curBuildingOper.dynamicData.currentTechId)
+    self.curBuildingOper.dynamicData.techDetail = datas
+end
+
+function SkillTreeMediator:CloseDetailView( )
+    self.uiBinder.m_GameObject_Detail:SetActive(false)
+end
+
+function SkillTreeMediator:BackPanel()
+    Facade:BackPanel()
+end
+
+return SkillTreeMediator

@@ -1,0 +1,3 @@
+local languageMap = {
+}
+return languageMap

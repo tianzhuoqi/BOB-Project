@@ -1,0 +1,17 @@
+local languageMap = {
+    ["HNCollectHead1"] = "",
+    ["HNCollectBody1"] = "",
+    ["HNGeneralTail1"] = "",
+    ["HNFrigateHead1"] = "",
+    ["HNFrigateBodyA1"] = "",
+    ["HNFrigateBodyB1"] = "",
+    ["HNFrigateTail1"] = "",
+    ["HNCollectHead1Dtl"] = "",
+    ["HNCollectBody1Dtl"] = "",
+    ["HNGeneralTail1Dtl"] = "",
+    ["HNFrigateHead1Dtl"] = "",
+    ["HNFrigateBodyA1Dtl"] = "",
+    ["HNFrigateBodyB1Dtl"] = "",
+    ["HNFrigateTail1Dtl"] = "",
+}
+return languageMap

@@ -1,0 +1,13 @@
+local languageMap = {
+    ["WCRCapacityV"] = "",
+    ["WCRCapacityN"] = "",
+    ["WCRMineralTab"] = "",
+    ["WCRIntermediateTab"] = "",
+    ["WCRProductTab"] = "",
+    ["WCROthersTab"] = "",
+    ["WCRsSubMaxBtn"] = "",
+    ["WCRsSubCancelBtn"] = "",
+    ["WCRsSubSellBtn"] = "",
+    ["WCRsSubConsumeBtn"] = "",
+}
+return languageMap

@@ -1,0 +1,8 @@
+local languageMap = {
+    ["BLTitle"] = "Building List",
+    ["BLIndustryTab"] = "Industry",
+    ["BLResourceTab"] = "Resource",
+    ["BLHumanTab"] = "Human",
+    ["BLDefenseTab"] = "Defense",
+}
+return languageMap

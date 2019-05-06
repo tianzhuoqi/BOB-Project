@@ -1,0 +1,7 @@
+local languageMap = {
+    ["ModCollect1"] = "",
+    ["ModCollect1Dtl"] = "",
+    ["ModFrigate1"] = "",
+    ["ModFrigate1Dtl"] = "",
+}
+return languageMap

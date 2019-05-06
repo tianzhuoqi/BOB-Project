@@ -1,0 +1,11 @@
+local SUniverseStartCommand = class("SUniverseStartCommand", SimpleCommand)
+
+SUniverseStartCommand.MODULE_NAME = NotiConst.Command_SUniverseStart
+function SUniverseStartCommand:Execute(notice)
+	Facade:OverLayerPanel("UIPlayerResourcePanel")
+	Facade:SetHomePagePoint()
+	Facade:ReplacePanel("WorldPanel")
+end
+
+
+return SUniverseStartCommand

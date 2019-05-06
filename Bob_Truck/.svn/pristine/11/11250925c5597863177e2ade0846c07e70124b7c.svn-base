@@ -1,0 +1,23 @@
+local languageMap = {
+    ["FExploreTitle"] = "我的舰队",
+    ["FExploreCCapabilities"] = "战斗力:{0}",
+    ["FExploreCPosition"] = "位置:{0}",
+    ["FExploreFuel"] = "燃料:{0}/{1}",
+    ["FDirectiveTitle"] = "舰队指令",
+    ["FDirectiveListName"] = "舰队采集",
+    ["FDirectiveLim"] = "只能在他人未占领区域采集.",
+    ["FDirectiveIngFleetName"] = "舰队 {0}",
+    ["FDirectiveIngFleetWorking"] = "采集中",
+    ["FDirectiveIngCancel"] = "停止",
+    ["FDirectiveSubName"] = "舰队 {0}",
+    ["FDirectiveSubNum"] = "{0}/{1}",
+    ["FDirectiveSubMiningSpeed"] = "采集速度:{0}",
+    ["FDirectiveSubMiningCap"] = "装载量:",
+    ["FListTitle"] = "舰队列表",
+    ["FListOperateBtn"] = "操作",
+    ["FListFoldBtn"] = "收起",
+    ["FListLookOver"] = "查看",
+    ["FTip01"] = "",
+    ["FTip02"] = "",
+}
+return languageMap

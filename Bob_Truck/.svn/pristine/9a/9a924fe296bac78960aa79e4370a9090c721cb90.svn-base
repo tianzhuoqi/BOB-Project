@@ -1,0 +1,67 @@
+local assetbundledatatable = 
+{
+    ['Assets/ResourcesAssets/AtlasData/CommonAtlas.png'] =
+    {
+        Guid = '13c6230923d9ce142b24cb980b484141',
+        AssetBundlePath = 'Assets/ResourcesAssets/AtlasData/CommonAtlas.png',
+        Name = 'CommonAtlas',
+        Extension = 'png',
+        Version = '1.0.0',
+    },
+
+    ['Assets/ResourcesAssets/AtlasData/CommonAtlasData.bytes'] =
+    {
+        Guid = 'ba73bd8d867d67543b2ba7b075cbbf3f',
+        AssetBundlePath = 'Assets/ResourcesAssets/AtlasData/CommonAtlasData.bytes',
+        Name = 'CommonAtlasData',
+        Extension = 'bytes',
+        Version = '1.0.0',
+    },
+
+    ['Assets/ResourcesAssets/Lua/Data/assetbundledatatable.bytes'] =
+    {
+        Guid = 'assetbundledatatable.bytes',
+        AssetBundlePath = 'Assets/ResourcesAssets/Lua/Data/assetbundledatatable.bytes',
+        Name = 'assetbundledatatable',
+        Extension = 'bytes',
+        Version = '1.0.0',
+    },
+
+    ['Assets/ResourcesAssets/ModelFBX/aise.prefab'] =
+    {
+        Guid = '8b334d7057409fa41b7263d0b85f8444',
+        AssetBundlePath = 'Assets/ResourcesAssets/ModelFBX/aise.prefab',
+        Name = 'aise',
+        Extension = 'prefab',
+        Version = '1.0.0',
+    },
+
+    ['Assets/ResourcesAssets/ModelFBX/akaya.prefab'] =
+    {
+        Guid = 'dbfd1dbb32a6e484b8b58d673d959478',
+        AssetBundlePath = 'Assets/ResourcesAssets/ModelFBX/akaya.prefab',
+        Name = 'akaya',
+        Extension = 'prefab',
+        Version = '1.0.0',
+    },
+
+    ['Assets/ResourcesAssets/UIPanel/SUpdate/UpdatePanel.prefab'] =
+    {
+        Guid = '551ac0fd10c69c84a916f7ac79f23775',
+        AssetBundlePath = 'Assets/ResourcesAssets/UIPanel/SUpdate/UpdatePanel.prefab',
+        Name = 'UpdatePanel',
+        Extension = 'prefab',
+        Version = '1.0.0',
+    },
+
+    ['Assets/Plugins/Shaders/Character/Silhouette.shader'] =
+    {
+        Guid = '7e0dadf1e0897bd449dde947993d3253',
+        AssetBundlePath = 'Assets/Plugins/Shaders/Character/Silhouette.shader',
+        Name = 'Silhouette',
+        Extension = 'shader',
+        Version = '1.0.0',
+    },
+
+}
+return assetbundledatatable

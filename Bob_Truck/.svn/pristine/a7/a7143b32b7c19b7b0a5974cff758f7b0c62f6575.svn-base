@@ -1,0 +1,33 @@
+require("Proto/scene_pb")
+local ListCell = require("Game/Module/UICommon/ListCell")
+
+local TableCell = register("SkillTreeTechDetailListCell", ListCell)
+
+local planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+
+function TableCell:Awake(gameObject)
+    TableCell.super.Awake(self, gameObject)
+    self.n_Label_DetailInfo = self:FindComponent("n_Label_DetailInfo", "UILabel")
+    self.n_Label_InfoPercentage = self:FindComponent("n_Label_InfoPercentage", "UILabel")
+    self.n_Sprite_DetailBGInactive = self:FindComponent("n_Sprite_DetailBGInactive", "UISprite")
+  
+
+end
+
+function TableCell:DrawCell(index)
+    self.dataIndex = index + 1
+    local curBuildingOper = planetaryProxy:GetCurBuildingOper()
+    local param = curBuildingOper.dynamicData.techDetail[self.dataIndex]
+    local currentLevel = curBuildingOper.dynamicData.currentTechId % 100
+    if self.dataIndex == currentLevel then
+        self.n_Sprite_DetailBGInactive.gameObject:SetActive(true)
+    else
+        self.n_Sprite_DetailBGInactive.gameObject:SetActive(false)
+    end
+    self.n_Label_DetailInfo.text = tostring(self.dataIndex)
+    self.n_Label_InfoPercentage.text = tostring(param)
+   
+end
+
+
+return TableCell

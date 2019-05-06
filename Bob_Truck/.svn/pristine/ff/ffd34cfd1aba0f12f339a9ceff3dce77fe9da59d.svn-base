@@ -1,0 +1,10 @@
+local languageMap = {
+    ["HPCollectBtn"] = "领取成品",
+    ["HPTemplateFilterBtn"] = "模板过滤器",
+    ["HPAssemblyBtn"] = "组装厂",
+    ["HPProwTab"] = "舰首",
+    ["HPExtentionTab"] = "拓展",
+    ["HPEngineTab"] = "引擎",
+    ["HPEmployee"] = "雇员",
+}
+return languageMap

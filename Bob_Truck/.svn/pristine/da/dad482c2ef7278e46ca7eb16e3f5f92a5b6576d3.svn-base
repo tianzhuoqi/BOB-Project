@@ -1,0 +1,259 @@
+local ExploreFleetLstUIListCellMediator = class("ExploreFleetLstUIListCellMediator", MediatorDynamic)
+
+
+function ExploreFleetLstUIListCellMediator:OnRegister()
+    self.fleetProxy = Facade:RetrieveProxy(NotiConst.Proxy_Fleet)
+    self.univProxy = Facade:RetrieveProxy(NotiConst.Proxy_Universe)
+    self.planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+    self:RegisterObserver(NotiConst.Notify_ExploreFleetLstInit,"FleetLstInit")
+end
+
+function ExploreFleetLstUIListCellMediator:FleetLstInit( notify )
+    local body = notify:GetBody()
+    if body ~= nil then
+        if body == common_pb.MOVE then
+            self:CheckMoveType()
+        elseif body == common_pb.EXPLORE then
+            self.m_viewComponent.txtActionBtn.text = "探索"
+            local NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.actionBtn)
+            NLuaClickEvent:AddClick(self, self.OnClickExploreButton)
+        elseif body == common_pb.COLLECT then
+            self.m_viewComponent.txtActionBtn.text = "采集"
+            local NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.actionBtn)
+            NLuaClickEvent:AddClick(self, self.OnClickCollectButton)
+        end
+    end
+end
+
+function ExploreFleetLstUIListCellMediator:CheckMoveType()
+    local GalaxyOper = self.fleetProxy:GetCurrentOperation()
+    local fleetList = self.fleetProxy:GetMyFleetsDataByType()
+    if not fleetList then
+        return
+    end
+    local fleet = fleetList[self.m_viewComponent.dataIndex]
+    if not fleet then
+        return
+    end
+    local fltStatus = self.fleetProxy:GetFleetStatus(fleet.fleetId)
+    local nSelGalaxyID = GalaxyOper.targetGalaxyId
+    local strStatus = ''
+    self.m_viewComponent.speedUpBtn:SetActive(false)
+    if fltStatus == common_pb.MOVE then --正在移动，可改变航线
+        self.m_viewComponent.txtActionBtn.text = "改变航线"
+        local NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.actionBtn)
+        NLuaClickEvent:AddClick(self, self.ButtonChageTargetClick)
+        --以下为是否显示加速
+        
+        local LastGalaxyOper = self.fleetProxy:GetOperDataByFleetId(fleet.fleetId)
+        if LastGalaxyOper ~= nil then
+            for i,v in ipairs(LastGalaxyOper.path) do
+                if v == nSelGalaxyID then
+                    self.m_viewComponent.speedUpBtn:SetActive(true)
+                    local NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.speedUpBtn)
+                    NLuaClickEvent:AddClick(self, self.ButtonChageSpeedClick)
+                    break
+                end
+            end
+        end
+    elseif fltStatus <= 0 then
+        strStatus = string.format("%.2f Unit", self.univProxy:CalDistanceByID(fleet.nodeId, nSelGalaxyID))
+        self.m_viewComponent.txtActionBtn.text = "移动"
+        local NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.actionBtn)
+        NLuaClickEvent:AddClick(self, self.ButtonGoAHeadClick)
+    end
+    self.m_viewComponent.txtStatus.text = strStatus
+end
+
+
+function ExploreFleetLstUIListCellMediator:ButtonGoAHeadClick()
+    local GalaxyOper = self.fleetProxy:GetCurrentOperation()
+    local nSelGalaxyID = GalaxyOper.targetGalaxyId
+    local bExpled = self.univProxy:IsExploredNode(nSelGalaxyID)
+    --local fleetList = self.fleetProxy:GetMyFleetsDataByType(GalaxyOper.type)
+    local fleetList = self.fleetProxy:GetMyFleetsDataByType()
+    local fleet = fleetList[self.m_viewComponent.dataIndex]
+    GalaxyOper.fleetId = fleet.fleetId
+    
+    local nodeid = 0
+    
+    if fleet.fromNodeId == fleet.toNodeId then
+        nodeid = fleet.nodeId
+    else
+        nodeid = fleet.fromNodeId
+    end
+
+    local path = self.univProxy:BFS_Path_Search(nodeid,nSelGalaxyID,GalaxyOper.type)
+
+    if #path == 0 or path[1] ~= fleet.nodeId then
+        table.insert( path, 1, fleet.nodeId )
+    end
+
+    local distance = self.univProxy:CalDistanceByPath(path)
+
+    GalaxyOper.path = path
+    GalaxyOper.pathLines = {}
+    for i=1,#GalaxyOper.path-1 do
+        local node1 = self.univProxy:GetNode(GalaxyOper.path[i])
+        local node2 = self.univProxy:GetNode(GalaxyOper.path[i+1])
+        table.insert(GalaxyOper.pathLines, {node1.position,node2.position})
+    end
+    GalaxyOper.distance = distance
+
+    self:RequestMove(fleet.fleetId,path)
+end
+
+-- 采集btn按下
+function ExploreFleetLstUIListCellMediator:OnClickCollectButton()
+    local planetId = self.planetaryProxy:GetChosenPlanetId()
+    
+    local planetData = self.planetaryProxy:GetPlanetDataByPlanetId(planetId)
+
+    local fleetProxy = Facade:RetrieveProxy(NotiConst.Proxy_Fleet)
+    local fleetList = fleetProxy:GetMyFleetsDataByType()
+
+    local fleetId = fleetList[self.m_viewComponent.dataIndex].fleetId
+
+    if planetData ~= nil then
+        local body = {nodeId = self.planetaryProxy:GetPlanetaryId(), planetId = planetId, fleetId = fleetId}
+        Facade:SendNotification(NotiConst.Notify_PlanetaryStartMine, body)
+    end
+    self.fleetProxy:SetCurrentOperation(nil) --清除当前操作
+    Facade:BackPanel()
+end
+
+-- 探索btn按下
+function ExploreFleetLstUIListCellMediator:OnClickExploreButton()
+    local fleetMap = self.planetaryProxy:GetAllFleetMap()
+    local fleetId = 0
+    if fleetMap == nil then
+        LogDebug("fleet empty")
+        return
+    end
+    -- TODO
+    -- TEMP GET fleetId
+    
+    local fleetProxy = Facade:RetrieveProxy(NotiConst.Proxy_Fleet)
+    local fleetList = fleetProxy:GetMyFleetsDataByType()
+
+    local fleetId = fleetList[self.m_viewComponent.dataIndex].fleetId
+    body = {}
+    body.fleetId = fleetId
+    Facade:SendNotification(NotiConst.Notify_PlanetaryStartExplore, body)
+    self.fleetProxy:SetCurrentOperation(nil) --清除当前操作
+    Facade:BackPanel()
+end   
+
+function ExploreFleetLstUIListCellMediator:RequestMove(fleetId,path)
+    ManagerNetMsgProcInst:AddS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.FLEETMOVE), self.OnRequestMove, self)
+    Facade:SendNotification(NotiConst.Command_RPCFleetMove,{
+        fleetId = fleetId,
+        path = path
+    })
+end
+
+function ExploreFleetLstUIListCellMediator:OnRequestMove(btsData)
+    local data = scene_pb.TSCFleetMove()
+    data:MergeFromString(btsData)
+    if data.res == 1 then
+        local GalaxyOper = self.fleetProxy:GetCurrentOperation()
+        self.fleetProxy:AddOperationData(GalaxyOper)
+        self.fleetProxy:SetCurrentOperation(nil)
+        self.fleetProxy:SetFleetData(data.fleet)
+        local galaxyOper = self.fleetProxy:GetOperDataByFleetId(data.fleet.fleetId)
+        if galaxyOper == nil then
+            return
+        end
+        local dynamicData = {}
+        dynamicData.startTime = data.fleet.startTime
+        dynamicData.endTime = data.fleet.endTime
+        dynamicData.distance = self.univProxy:CalDistanceByID(data.fleet.fromNodeId,data.fleet.toNodeId)
+        galaxyOper.dynamicData = dynamicData
+        Facade:SendNotification(NotiConst.Notify_SceneFleetDataUpdated, {data.fleet.fleetId})
+        Facade:SendNotification(NotiConst.Command_PUniverseFleetOperUpdate)
+
+        Facade:BackPanel()
+    end
+    
+end
+
+
+function ExploreFleetLstUIListCellMediator:ButtonChageSpeedClick()
+    local GalaxyOper = self.fleetProxy:GetCurrentOperation()
+    local fleetList = self.fleetProxy:GetMyFleetsDataByType()
+    local fleet = fleetList[self.m_viewComponent.dataIndex]
+    local LastGalaxyOper = self.fleetProxy:GetOperDataByFleetId(fleet.fleetId)
+    if LastGalaxyOper == nil then
+        OpenMessageBox(NotiConst.MessageBoxType.Confirm,"舰队已完成任务，无法操作","消息")
+        return
+    end
+    local nSelGalaxyID = GalaxyOper.targetGalaxyId
+    self.fleetProxy:SetCurrentOperation(nil)
+
+    --self.fleetProxy:MockAccelerate(fleet.fleetId)
+    self:RequestSpeedUp(fleet.fleetId)
+end
+
+function ExploreFleetLstUIListCellMediator:RequestSpeedUp(fleetId)
+    ManagerNetMsgProcInst:AddS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.FLEETSPEEDUP), self.OnRequestSpeedUp, self)
+    Facade:SendNotification(NotiConst.Command_RPCFleetSpeedUp,{
+        fleetId = fleetId
+    })
+end
+
+function ExploreFleetLstUIListCellMediator:OnRequestSpeedUp(btsData)
+    local data = scene_pb.TSCFleetSpeedUp()
+    data:MergeFromString(btsData)
+    self.fleetProxy:SetFleetData(data.fleet)
+
+    ManagerNetMsgProcInst:FuncRmvListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.FLEETSPEEDUP))
+    
+    Facade:BackPanel()
+end
+
+
+function ExploreFleetLstUIListCellMediator:ButtonChageTargetClick()
+    local GalaxyOper = self.fleetProxy:GetCurrentOperation()
+    local fleetList = self.fleetProxy:GetMyFleetsDataByType()
+    local fleet = fleetList[self.m_viewComponent.dataIndex]
+    local LastGalaxyOper = self.fleetProxy:GetOperDataByFleetId(fleet.fleetId)
+    if LastGalaxyOper == nil then
+        OpenMessageBox(NotiConst.MessageBoxType.Confirm,"舰队已完成任务，无法操作","消息")
+        return
+    end
+    local nSelGalaxyID = GalaxyOper.targetGalaxyId
+    local currentNode = fleet.toNodeId
+    local lockPath = {} --锁定不变的路径
+    for i=1,#LastGalaxyOper.path do
+        if LastGalaxyOper.path[i]==currentNode then
+            break
+        end
+        table.insert(lockPath,LastGalaxyOper.path[i])
+    end
+    local path = self.univProxy:BFS_Path_Search(LastGalaxyOper.path[1+#lockPath],nSelGalaxyID,GalaxyOper.type,lockPath)
+    if currentNode == nSelGalaxyID then
+        table.insert(lockPath,currentNode)
+    elseif #path == 0 then
+        OpenMessageBox(NotiConst.MessageBoxType.Confirm,"舰队无法改变航线，等待任务完成","消息")
+        return
+    end
+    for i,v in ipairs(path) do
+        table.insert(lockPath,v)
+    end
+    path = lockPath
+    local distance = self.univProxy:CalDistanceByPath(path)
+    LastGalaxyOper.path = path
+    LastGalaxyOper.pathLines = {}
+    for i=1,#LastGalaxyOper.path-1 do
+        local node1 = self.univProxy:GetNode(LastGalaxyOper.path[i])
+        local node2 = self.univProxy:GetNode(LastGalaxyOper.path[i+1])
+        table.insert(LastGalaxyOper.pathLines, {node1.position,node2.position})
+    end
+    LastGalaxyOper.distance = distance
+    self.fleetProxy:SetCurrentOperation(nil)
+    self:RequestMove(fleet.fleetId,path)
+    
+    Facade:SendNotification(NotiConst.Notify_FleetTargetChanged,{fleet.fleetId})
+end
+
+return ExploreFleetLstUIListCellMediator

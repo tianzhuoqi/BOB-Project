@@ -1,0 +1,7 @@
+local languageMap = {
+    ["ModCollect1"] = "采集舰",
+    ["ModCollect1Dtl"] = "采集舰是一种...",
+    ["ModFrigate1"] = "护卫舰",
+    ["ModFrigate1Dtl"] = "护卫舰是一种...",
+}
+return languageMap

@@ -1,0 +1,8 @@
+local SLoadingStartCommand = class("SLoadingStartCommand", SimpleCommand)
+
+SLoadingStartCommand.MODULE_NAME = NotiConst.Command_SLoadingStart
+function SLoadingStartCommand:Execute(notice)
+	Facade:ReplacePanel('LoadingPanel')
+end
+
+return SLoadingStartCommand

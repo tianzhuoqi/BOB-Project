@@ -1,0 +1,9 @@
+local languageMap = {
+    ["AcNWeapon1"] = "射弹武器增幅器",
+    ["AcNShield1"] = "结构加固",
+    ["AcNThrusters1"] = "推进辅助器",
+    ["AcNWeapon1Dtl"] = "射弹武器增幅器是一种...",
+    ["AcNShield1Dtl"] = "结构加固是一种...",
+    ["AcNThrusters1Dtl"] = "推进辅助器是一种...",
+}
+return languageMap

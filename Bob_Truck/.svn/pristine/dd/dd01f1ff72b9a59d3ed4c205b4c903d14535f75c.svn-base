@@ -1,0 +1,48 @@
+local RefineryPanelBinder = class("RefineryPanelBinder");
+
+function RefineryPanelBinder:ctor(gameObject)
+	local transform = gameObject.transform;
+	self.m_bkgnd = transform:Find("m_bkgnd"):GetComponent("UITexture");
+	self.m_btnSClose = transform:Find("Anchor_Top/m_btnSClose"):GetComponent("UIButton");
+	self.m_Label_TitleKey = transform:Find("Anchor_Top/m_Label_TitleKey"):GetComponent("UILabel");
+	self.m_LabelLv = transform:Find("Anchor_Top/m_Label_TitleKey/m_LabelLv"):GetComponent("UILabel");
+	self.m_ItemSellNum = transform:Find("Anchor_Center/m_ItemSellNum").gameObject;
+	self.m_Label_NumTitle = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/m_Label_NumTitle"):GetComponent("UILabel");
+	self.m_Label_Num = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/m_Label_Num"):GetComponent("UIInput");
+	self.m_MenuReduce = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/m_MenuReduce"):GetComponent("UIButton");
+	self.m_MenuMax = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/m_MenuMax"):GetComponent("UIButton");
+	self.m_MenuAdd = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/m_MenuAdd"):GetComponent("UIButton");
+	self.m_MenuOk = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/m_MenuOk"):GetComponent("UIButton");
+	self.m_Sprite_MenuOk = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/m_MenuOk/m_Sprite_MenuOk").gameObject;
+	self.m_MenuCancel = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/m_MenuCancel"):GetComponent("UIButton");
+	self.m_Label_RatioVal = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/Label_RatioNam/m_Label_RatioVal"):GetComponent("UILabel");
+	self.m_Label_ConsumpVal = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/Label_ConsumpNam/m_Label_ConsumpVal"):GetComponent("UILabel");
+	self.m_Label_ResultVal = transform:Find("Anchor_Center/m_ItemSellNum/GameObject_Menu/Label_ResultNam/m_Label_ResultVal"):GetComponent("UILabel");
+	self.m_StateInfo = transform:Find("Anchor_Center/Input/m_StateInfo"):GetComponent("UILabel");
+	self.m_MineralSlot = transform:Find("Anchor_Center/Input/m_MineralSlot"):GetComponent("UIButton");
+	self.m_PutSig = transform:Find("Anchor_Center/Input/m_MineralSlot/m_PutSig"):GetComponent("UISprite");
+	self.m_CurMine = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine").gameObject;
+	self.m_AmountName = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine/Des/m_AmountName"):GetComponent("UILabel");
+	self.m_AmountNum = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine/Des/m_AmountNum"):GetComponent("UILabel");
+	self.m_RemainTimeName = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine/Des/m_RemainTimeName"):GetComponent("UILabel");
+	self.m_RemainTimeNum = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine/Des/m_RemainTimeNum"):GetComponent("UILabel");
+	self.m_iconIn = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine/m_iconIn"):GetComponent("UITexture");
+	self.m_QualityIn = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine/m_QualityIn"):GetComponent("UISprite");
+	self.m_Label_Purity = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine/Purity/m_Label_Purity"):GetComponent("UILabel");
+	self.m_InputName = transform:Find("Anchor_Center/Input/m_MineralSlot/m_CurMine/m_InputName"):GetComponent("UILabel");
+	self.m_CurProduct = transform:Find("Anchor_Center/Input/Product/m_CurProduct").gameObject;
+	self.m_NumLabelOut = transform:Find("Anchor_Center/Input/Product/m_CurProduct/m_NumLabelOut"):GetComponent("UILabel");
+	self.m_NumSprite2 = transform:Find("Anchor_Center/Input/Product/m_CurProduct/m_NumSprite2"):GetComponent("UISprite");
+	self.m_OutName = transform:Find("Anchor_Center/Input/Product/m_CurProduct/m_OutName"):GetComponent("UILabel");
+	self.m_QualityOut = transform:Find("Anchor_Center/Input/Product/m_CurProduct/m_QualityOut"):GetComponent("UISprite");
+	self.m_iconOut = transform:Find("Anchor_Center/Input/Product/m_CurProduct/m_iconOut"):GetComponent("UITexture");
+	self.m_SubPanel = transform:Find("Anchor_Center/SelectView/ListViewMacro/m_SubPanel").gameObject;
+	self.m_StateInfo2 = transform:Find("Anchor_Center/SelectView/m_StateInfo2"):GetComponent("UILabel");
+	self.m_ButtonGetResult = transform:Find("Anchor_Bottom/m_ButtonGetResult"):GetComponent("UIButton");
+	self.m_ButtomGetResultLabel = transform:Find("Anchor_Bottom/m_ButtonGetResult/m_ButtomGetResultLabel"):GetComponent("UILabel");
+	self.m_ButtonOperate = transform:Find("Anchor_Bottom/m_ButtonOperate"):GetComponent("UIButton");
+	self.m_ButtomOperLabel = transform:Find("Anchor_Bottom/m_ButtonOperate/m_ButtomOperLabel"):GetComponent("UILabel");
+	self.m_ButtonCancel = transform:Find("Anchor_Bottom/m_ButtonCancel"):GetComponent("UIButton");
+	self.m_ButtomCancelLabel = transform:Find("Anchor_Bottom/m_ButtonCancel/m_ButtomCancelLabel"):GetComponent("UILabel");
+end
+return RefineryPanelBinder

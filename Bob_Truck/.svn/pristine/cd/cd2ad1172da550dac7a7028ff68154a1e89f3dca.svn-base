@@ -1,0 +1,417 @@
+local RefineryMediator = class("RefineryMediator", MediatorDynamic)
+
+function RefineryMediator:OnRegister()
+    self.storehouseProxy = Facade:RetrieveProxy(NotiConst.Proxy_Storehouse)
+    self.planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+
+    local NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_btnSClose.gameObject)
+    NLuaClickEvent:AddClick(self, self.Close)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_MenuMax.gameObject)
+    NLuaClickEvent:AddClick(self, self.MaxNum)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_MenuOk.gameObject)
+    NLuaClickEvent:AddClick(self, self.Sure)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_MenuCancel.gameObject)
+    NLuaClickEvent:AddClick(self, self.CloseSetNumPanel)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_MenuAdd.gameObject)
+    NLuaClickEvent:AddClick(self, self.AddNum)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_MenuReduce.gameObject)
+    NLuaClickEvent:AddClick(self, self.CutDownNum)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_ButtonGetResult.gameObject)
+    NLuaClickEvent:AddClick(self, self.GetRefineryResult)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_ButtonOperate.gameObject)
+    NLuaClickEvent:AddClick(self, self.StartRefinery)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_ButtonCancel.gameObject)
+    NLuaClickEvent:AddClick(self, self.EndRefinery)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_MineralSlot.gameObject)
+    NLuaClickEvent:AddClick(self, self.ReplaceItem)
+
+    local NLuaEventRegister = NLuaEventRegister.Get(self.m_viewComponent.uiBinder.m_Label_Num.gameObject)
+    NLuaEventRegister:RegisterEvent(self.m_viewComponent.uiBinder.m_Label_Num.onChange, self, self.OnChange)
+
+    self:RegisterObserver(NotiConst.Notify_RefinerySelectMine,"OnSelectedMine")
+end
+
+function RefineryMediator:InitData()
+    self.curBuilding = self.planetaryProxy:GetCurBuildingOper()
+    self.editItem = {}
+    self.itemData = {}
+
+    ManagerNetMsgProcInst:AddS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.REFINERYSTART), self.OnRefineryStart, self)
+    ManagerNetMsgProcInst:AddS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.REFINERYEND), self.OnRefineryEnd, self)
+    ManagerNetMsgProcInst:AddS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.REFINERYCOLLECT), self.OnRefineryCollect, self)
+
+    local buildingData = self.planetaryProxy:GetBuildingConifData(self.curBuilding.configId)
+    local level = buildingData.data[buildingData.EVar["bldg_lvl_n"]]
+    local refnyData = DATA_BLDG_REFNY[level]
+    self.maxCount = refnyData[DATA_BLDG_REFNY.EVar["max_refine_qty_n"]]
+    self.maxCount = planetaryProxy:GetValueAfterAddition(self.maxCount,"BLDG_REFNY","max_refine_qty")
+    self.speed = refnyData[DATA_BLDG_REFNY.EVar["refine_spd_coeff_n"]]
+    self.speed = planetaryProxy:GetValueAfterAddition(self.speed,"BLDG_REFNY","refine_spd_coeff")
+
+    self.refineryInfo = self.curBuilding.dynamicData
+    self.refineryState = 0 --0:未生产，1：正在生产，2：生产完成, 3:正在添加原料
+    self.startTime = 0
+    self.endTime = 0
+    self.continuedTime = 0
+
+    if self.refineryInfo.item ~= nil and self.refineryInfo.item.id > 0 then
+        if self.refineryInfo.startTime > 0 and self.refineryInfo.endTime > 0 then
+            self.endTime = self.refineryInfo.endTime
+            self.startTime = self.refineryInfo.startTime
+            self.continuedTime = self.endTime - self.startTime
+
+            local curTime = GetServerTimeStamp()
+            if curTime >= self.endTime then
+                self.refineryState = 2
+            else
+                self.refineryState = 1
+
+                self.updateBeat = UpdateBeat
+                self.updateBeat:Remove(self.Update, self)
+                self.updateBeat:Add(self.Update, self)
+            end
+        else
+            self.refineryState = 3
+        end
+
+        --原料
+        self.m_viewComponent.uiBinder.m_CurMine:SetActive(true)
+        self.m_viewComponent.uiBinder.m_PutSig.gameObject:SetActive(false)
+        self.m_viewComponent.uiBinder.m_Label_Purity.text = self.refineryInfo.item.baseValue
+        local configData = self.storehouseProxy:GetItemConfigData(self.refineryInfo.item.id)
+        local name_s = configData.relation["name_s"]
+        self.m_viewComponent.uiBinder.m_InputName.text = configData.data[configData.EVar[name_s]]
+        self.m_viewComponent.uiBinder.m_AmountNum.text = string.format("%d/%d", self.refineryInfo.item.num, self.maxCount)
+        local unit = configData.data[configData.EVar["stor_unit_n"]]*self.refineryInfo.item.num
+        local remainTime = unit/self.speed*60*60
+        self.m_viewComponent.uiBinder.m_RemainTimeNum.text = self.refineryState == 2 and 0 or remainTime
+        
+        --产出
+        self.m_viewComponent.uiBinder.m_CurProduct:SetActive(true)
+        self.m_viewComponent.uiBinder.m_NumSprite2.fillAmount = self.refineryState == 2 and 0 or 1
+
+        local resId = configData.data[configData.EVar["result_id_n"]]
+        local resData = self.storehouseProxy:GetItemConfigData(resId)
+        name_s = resData.relation["name_s"]
+        self.m_viewComponent.uiBinder.m_OutName.text = resData.data[resData.EVar[name_s]]
+        local ratio = configData.data[configData.EVar["cost_qty_n"]]
+        self.m_viewComponent.uiBinder.m_NumLabelOut.text = self.refineryInfo.item.num/ratio
+    else
+        self.refineryState = 0
+
+        self.m_viewComponent.uiBinder.m_CurMine:SetActive(false)
+        self.m_viewComponent.uiBinder.m_PutSig.gameObject:SetActive(true)
+        self.m_viewComponent.uiBinder.m_CurProduct:SetActive(false)
+    end
+
+    self:SetMineList()
+    self:RefreshView()
+
+    local name = buildingData.data[buildingData.EVar["bldg_name_s"]]
+    self.m_viewComponent.uiBinder.m_Label_TitleKey.text = GetLanguageText("BuildingAttribute", name)
+    self.m_viewComponent.uiBinder.m_LabelLv.text = string.format("Lv.%s", level)
+end
+
+function RefineryMediator:Update()
+    local curTime = GetServerTimeStamp()
+    if curTime >= self.endTime then
+        self.refineryState = 2
+
+        self.updateBeat:Remove(self.Update, self)
+
+        self:RefreshView()
+    else
+        local ramainingTime = math.floor(self.endTime - curTime)
+        self.m_viewComponent.uiBinder.m_RemainTimeNum.text = ramainingTime
+        self.m_viewComponent.uiBinder.m_NumSprite2.fillAmount = ramainingTime / self.continuedTime
+    end
+end
+
+function RefineryMediator:SetMineList()
+    self.storehouseProxy:InitRefineryData(self.curBuilding.nodeId)
+    local list = self.storehouseProxy:GetPackageData()
+    Facade:SendNotification("RefineryMineLstNotify",#list)
+    self.m_viewComponent.uiTableView:ScrollResetPosition()
+end
+
+function RefineryMediator:RefreshView()
+    if self.refineryState == 0 or  self.refineryState == 3 then
+        self.m_viewComponent.uiBinder.m_ButtonGetResult.gameObject:SetActive(false)
+        self.m_viewComponent.uiBinder.m_ButtonOperate.gameObject:SetActive(false)
+        self.m_viewComponent.uiBinder.m_ButtonCancel.gameObject:SetActive(false)
+    elseif self.refineryState == 1 then
+        self.m_viewComponent.uiBinder.m_ButtonGetResult.gameObject:SetActive(false)
+        self.m_viewComponent.uiBinder.m_ButtonOperate.gameObject:SetActive(false)
+        self.m_viewComponent.uiBinder.m_ButtonCancel.gameObject:SetActive(true)
+    elseif self.refineryState == 2 then
+        self.m_viewComponent.uiBinder.m_ButtonGetResult.gameObject:SetActive(true)
+        self.m_viewComponent.uiBinder.m_ButtonOperate.gameObject:SetActive(false)
+        self.m_viewComponent.uiBinder.m_ButtonCancel.gameObject:SetActive(false)
+    end
+end
+
+function RefineryMediator:Close()
+    if self.updateBeat then
+        self.updateBeat:Remove(self.Update, self)
+    end
+
+    if self.refineryState == 3 then
+        self.storehouseProxy:AddItemByData(self.curBuilding.nodeId, self.curBuilding.dynamicData.item)
+    end
+
+    ManagerNetMsgProcInst:RmvS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.REFINERYSTART), self.OnRefineryStart)
+    ManagerNetMsgProcInst:RmvS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.REFINERYEND), self.OnRefineryEnd)
+    ManagerNetMsgProcInst:RmvS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.REFINERYCOLLECT), self.OnRefineryCollect)
+
+    Facade:BackPanel()
+end
+
+function RefineryMediator:OnSelectedMine(notification)
+    if self.refineryState ~= 3 and self.refineryState ~= 0 then
+        return
+    end
+
+    local index = notification:GetBody()
+    local itemData = self.storehouseProxy:GetPackageDataByIndex(index)
+    
+    if itemData == nil then
+        return
+    end
+
+    if self.refineryInfo.item ~= nil and self.refineryInfo.item.id > 0 and itemData.id ~= self.refineryInfo.item.id then
+        return
+    end
+
+    if  self.refineryInfo.item ~= nil and self.refineryInfo.item.num >= self.maxCount then
+        return
+    end
+
+    self.editItem = itemData
+    local configData = self.storehouseProxy:GetItemConfigData(itemData.id)
+    local name_s = configData.relation["name_s"]
+    self.itemData.name = configData.data[configData.EVar[name_s]]
+
+    local configData = self.storehouseProxy:GetItemConfigData(self.editItem.id)
+    self.ratio = configData.data[configData.EVar["cost_qty_n"]]
+    local result_id = configData.data[configData.EVar["result_id_n"]]
+    local resultConfigData = self.storehouseProxy:GetItemConfigData(result_id)
+    self.resultName = resultConfigData.data[resultConfigData.EVar[resultConfigData.relation["name_s"]]]
+    self.m_viewComponent.uiBinder.m_Label_RatioVal.text = configData.data[configData.EVar[configData.relation["name_s"]]]..'X'..self.ratio..'/'..self.resultName..'X1'
+
+    self.m_viewComponent.uiBinder.m_Label_ConsumpVal.text = configData.data[configData.EVar[configData.relation["name_s"]]]
+
+    self:OpenSetNumPanel()
+end
+
+--打开设置界面
+function RefineryMediator:OpenSetNumPanel()
+    self.m_viewComponent.uiBinder.m_ItemSellNum:SetActive(true)
+    --self.m_viewComponent.uiBinder.m_Label_NumTitle.text = self.itemData.name.." "..self.editItem.num
+
+    self.itemCount = self.editItem.num
+    self.maxCreateCount = self.itemCount
+
+    self.reduceItem = {id = self.editItem.id, num = 0}
+    self:SetNum(0)
+end
+
+function RefineryMediator:CloseSetNumPanel()
+    self.m_viewComponent.uiBinder.m_ItemSellNum:SetActive(false)
+end
+
+function RefineryMediator:SetNum(num)
+    local sprite = self.m_viewComponent.uiBinder.m_Sprite_MenuOk.transform:GetComponent('UIEventGraySprite')
+    if num == 0 then
+        sprite:SetGray()
+        self.m_viewComponent.uiBinder.m_MenuOk.isEnabled = false
+        
+    else
+        sprite:SetNormal()
+        self.m_viewComponent.uiBinder.m_MenuOk.isEnabled = true
+    end
+
+    self.m_viewComponent.uiBinder.m_Label_Num.value = num
+    self.reduceItem.num = num
+end
+
+function RefineryMediator:CutDownNum()
+    local num = tonumber(self.m_viewComponent.uiBinder.m_Label_Num.value)
+    if num > 1 then
+        num = num - self.ratio
+        self:SetNum(num)
+    end
+end
+
+function RefineryMediator:AddNum()
+    local num = tonumber(self.m_viewComponent.uiBinder.m_Label_Num.value)
+    if num < self.maxCreateCount then
+        num = num + self.ratio
+        self:SetNum(num)
+    end
+end
+
+function RefineryMediator:MaxNum()
+    self:SetNum(math.floor(self.maxCreateCount / self.ratio) * self.ratio)
+end
+
+function RefineryMediator:OnChange()
+    self.m_viewComponent.uiBinder.m_Label_ResultVal.text = self.resultName..'X'..math.floor(tonumber(self.m_viewComponent.uiBinder.m_Label_Num.value) / self.ratio)
+end
+
+function RefineryMediator:Sure()
+    self:CloseSetNumPanel()
+
+    if not self:IsEnoughElec(self.reduceItem) then
+        OpenMessageBox(NotiConst.MessageBoxType.Tip,"没有足够的电力")
+        return
+    end
+
+    if self.curBuilding.dynamicData.item == nil or self.curBuilding.dynamicData.item.id == 0 then
+        self.curBuilding.dynamicData.item = {id = self.reduceItem.id, num = self.reduceItem.num, baseValue = self.editItem.baseValue}
+    else
+        self.curBuilding.dynamicData.item.num = self.curBuilding.dynamicData.item.num + self.reduceItem.num
+    end
+
+    self.storehouseProxy:UseItemByNum(self.curBuilding.nodeId, self.reduceItem.id, self.reduceItem.num)
+    self:InitData()
+
+    self:StartRefinery()
+end
+
+--更换原料
+function RefineryMediator:ReplaceItem()
+    if self.refineryState == 3 then
+        self.storehouseProxy:AddItemByData(self.curBuilding.nodeId, self.curBuilding.dynamicData.item)
+
+        self.curBuilding.dynamicData = {
+            item = nil,
+            startTime = 0,
+            endTime = 0,
+        }
+        self:InitData()
+    end
+end
+
+--开始提炼
+function RefineryMediator:StartRefinery()
+    if self.refineryInfo.item == nil or self.refineryInfo.item.id == 0 then
+        OpenMessageBox(NotiConst.MessageBoxType.Confirm,"选择啊!","信息")
+        return
+    end
+
+    local TCSRefineryStart = buildingRefinery_pb.TCSRefineryStart()
+    TCSRefineryStart.buildingId = self.curBuilding.targetBuilding
+    TCSRefineryStart.resId = self.refineryInfo.item.id
+    TCSRefineryStart.resNum = self.refineryInfo.item.num
+    NNetMgrInst:SendLuaNetMsg(common_pb.NETTYPELOBBY, common_pb.REFINERYSTART, TCSRefineryStart:SerializeToString())
+end
+
+function RefineryMediator:IsEnoughElec(data)
+    local configData = self.storehouseProxy:GetItemConfigData(data.id)
+    local needElec = configData.data[configData.EVar.ele_cost_n] * data.num
+    local info = self.planetaryProxy:GetElecMsg()
+    if info.restOfElect >= needElec then
+        return true
+    else
+        return false
+    end
+end
+
+function RefineryMediator:OnRefineryStart(btsData)
+    if btsData == nil then 
+        LogDebug("RefineryMediator:OnStartRefinery btsData==nil")
+        return
+    end
+
+    local TSCRefineryStart = buildingRefinery_pb.TSCRefineryStart()
+    TSCRefineryStart:MergeFromString(btsData)
+
+    if TSCRefineryStart.endTime ~= -1 then
+        local buildingData = {id = TSCRefineryStart.buildingId, getItemTime = TSCRefineryStart.endTime}
+        self.planetaryProxy:SetBuildingData_GetItemTime(buildingData)
+    end
+
+    self.planetaryProxy:SaveElecMsg(TSCRefineryStart.elecMsg)
+    Facade:SendNotification(NotiConst.Notify_UpdatElecInfo)
+
+    self.curBuilding.dynamicData = {
+        item = TSCRefineryStart.item,
+        startTime = TSCRefineryStart.startTime/1000,
+        endTime = TSCRefineryStart.endTime/1000,
+    }
+
+    self:InitData()
+end
+
+--结束提炼
+function RefineryMediator:EndRefinery()
+    local TCSRefineryEnd = buildingRefinery_pb.TCSRefineryEnd()
+    TCSRefineryEnd.buildingId = self.curBuilding.targetBuilding
+    NNetMgrInst:SendLuaNetMsg(common_pb.NETTYPELOBBY, common_pb.REFINERYEND, TCSRefineryEnd:SerializeToString())
+end
+
+function RefineryMediator:OnRefineryEnd(btsData)
+    if btsData == nil then 
+        LogDebug("RefineryMediator:OnRefineryEnd btsData==nil")
+        return
+    end
+
+    local TSCRefineryEnd = buildingRefinery_pb.TSCRefineryEnd()
+    TSCRefineryEnd:MergeFromString(btsData)
+    if TSCRefineryEnd.result == 1 then
+        self.curBuilding.dynamicData = {
+            item = nil,
+            startTime = 0,
+            endTime = 0,
+        }
+
+        if self.updateBeat then
+            self.updateBeat:Remove(self.Update, self)
+        end
+
+        self:InitData()
+    else
+        OpenMessageBox(NotiConst.MessageBoxType.Confirm,"失败","错误")
+    end
+end
+
+--领取
+function RefineryMediator:GetRefineryResult()
+    local TCSRefineryCollect = buildingRefinery_pb.TCSRefineryCollect()
+    TCSRefineryCollect.buildingId = self.curBuilding.targetBuilding
+    NNetMgrInst:SendLuaNetMsg(common_pb.NETTYPELOBBY, common_pb.REFINERYCOLLECT, TCSRefineryCollect:SerializeToString())
+end
+
+function RefineryMediator:OnRefineryCollect(btsData)
+    if btsData == nil then 
+        LogDebug("RefineryMediator:OnRefineryCollect btsData==nil")
+        return
+    end
+
+    local TSCRefineryCollect = buildingRefinery_pb.TSCRefineryCollect()
+    TSCRefineryCollect:MergeFromString(btsData)
+    if TSCRefineryCollect.result == 1 then
+        self.curBuilding.dynamicData = {
+            item = nil,
+            startTime = 0,
+            endTime = 0,
+        }
+
+        self:InitData()
+
+        OpenMessageBox(NotiConst.MessageBoxType.Confirm,"领取成功","信息")
+    else
+        OpenMessageBox(NotiConst.MessageBoxType.Confirm,"失败","错误")
+    end
+end
+
+return RefineryMediator

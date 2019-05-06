@@ -1,0 +1,55 @@
+local ListItem = require("Game/Module/UICommon/ListItem")
+
+local FleetGoodsDepotListItem = register("FleetGoodsDepotListItem", ListItem)
+
+function FleetGoodsDepotListItem:Awake(gameObject)
+    FleetGoodsDepotListItem.super.Awake(self, gameObject)
+
+    self.dragDropItem = gameObject.transform:GetComponent('UIDragDropItem')
+    self.Name = self:FindComponent("Name", "UILabel")
+    self.Count = self:FindComponent("Count", "UILabel")
+
+    self.storehouseProxy = Facade:RetrieveProxy(NotiConst.Proxy_Storehouse)
+
+    self.isDrag = false
+end
+
+function FleetGoodsDepotListItem:OnClick()
+    LogDebug('ListItem OnClick dataIndex:{0}', self.dataIndex)
+    Facade:SendNotification(NotiConst.Notify_FleetGoodsUnInstallGoods, self.data)
+end
+
+function FleetGoodsDepotListItem:OnDrag(delta)
+    self.isDrag = true
+end
+
+function FleetGoodsDepotListItem:OnLongPress()
+    if self.isDrag == false then
+        Facade:SendNotification(NotiConst.Notify_FleetGoodsSetGoodsNum, { type = 2, data = self.data })
+    end
+    self.isDrag = false
+end
+
+function FleetGoodsDepotListItem:OnDropUp(index, notificationKey)
+    if self.dragDropItem.m_notificationKey ~= notificationKey then
+        Facade:SendNotification(NotiConst.Notify_FleetGoodsDropUp, { index = index, notificationKey = notificationKey })
+    end
+end
+
+function FleetGoodsDepotListItem:DrawCell(index, cellIndex, itemsCount)
+    self.dataIndex = cellIndex * itemsCount + index + 1
+    self.data = self.storehouseProxy:GetStorehouseNodeByIndex(self.dataIndex)
+
+    self.dragDropItem.m_index = self.dataIndex
+
+    self.Name.text = self.data.id
+    self.Count.text = self.data.num
+
+    if self.data.change then
+        self.Count.color = Color.New(1,0,0,1)
+    else
+        self.Count.color = Color.New(1,1,1,1)
+    end
+end
+
+return FleetGoodsDepotListItem

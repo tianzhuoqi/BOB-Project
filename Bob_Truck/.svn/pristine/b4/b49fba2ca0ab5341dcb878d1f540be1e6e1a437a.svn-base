@@ -1,0 +1,47 @@
+local ListCell = require("Game/Module/UICommon/ListCell")
+
+local FleetDisbandListCell = register("FleetDisbandListCell", ListCell)
+
+function FleetDisbandListCell:Awake(gameObject)
+    FleetDisbandListCell.super.Awake(self, gameObject)
+
+    self.BgInactive = self:FindGameObject("g0/BgInactive")
+    self.BgActive = self:FindGameObject("g0/BgActive")
+    self.Check = self:FindComponent("g1/Check", "UISprite")
+    self.Icon = self:FindComponent("g1/Icon", "UISprite")
+    self.Name = self:FindComponent("g2/n_Label_Name", "UILabel")
+    self.Power = self:FindComponent("g2/Label_Capability", "UILabel")
+    self.Count = self:FindComponent("g3/Label_Number", "UILabel")
+
+    self.noCheckSpriteName = "c1bg11"
+    self.checkSpriteName = "c1ic01"
+
+    self.selectIndexKey = "FleetDisbandListCell"
+end
+
+function FleetDisbandListCell:OnClick()
+    Facade:SendNotification(NotiConst.Notify_FleetDisbandListCellChangeSelect, {index = self.dataIndex, data = self.data})
+end
+
+function FleetDisbandListCell:DrawCell(index)
+    self.fleetProxy = Facade:RetrieveProxy(NotiConst.Proxy_Fleet)
+    self.dataIndex = index + 1
+    self.data = self.fleetProxy:GetProtFleetDataByIndex(self.dataIndex)
+
+    local selectIndex = self.fleetProxy:GetCurrentSelectIndex(self.selectIndexKey)
+    if selectIndex[self.dataIndex] then
+        self.BgInactive:SetActive(false)
+        self.BgActive:SetActive(true)
+        self.Check.spriteName = self.checkSpriteName
+    else
+        self.BgInactive:SetActive(true)
+        self.BgActive:SetActive(false)
+        self.Check.spriteName = self.noCheckSpriteName
+    end
+
+    self.Name.text = self.data.fleetName
+    self.Count.text = string.format("%d/%d" , self.data.shipCount, self.data.maxShipCount)
+    self.Power.text = self.data.fightNum
+end
+
+return FleetDisbandListCell

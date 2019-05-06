@@ -1,0 +1,10 @@
+local languageMap = {
+    ["HPCollectBtn"] = "Collect",
+    ["HPTemplateFilterBtn"] = "Filter",
+    ["HPAssemblyBtn"] = "Assembly",
+    ["HPProwTab"] = "Prow",
+    ["HPExtentionTab"] = "Extention",
+    ["HPEngineTab"] = "Engine",
+    ["HPEmployee"] = "Employee",
+}
+return languageMap

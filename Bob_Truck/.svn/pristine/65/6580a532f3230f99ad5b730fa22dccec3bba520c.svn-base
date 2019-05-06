@@ -1,0 +1,135 @@
+local BuildingInfoMediator = class("BuildingInfoMediator", MediatorDynamic)
+require("Game/Module/SPlanetary/BuildingAttributeExtractor")
+
+function BuildingInfoMediator:OnRegister()
+    self.planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+    self.universeProxy = Facade:RetrieveProxy(NotiConst.Proxy_Universe)
+
+    self.model = {}
+
+    local NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_btnSClose.gameObject)
+    NLuaClickEvent:AddClick(self, self.Close)
+end
+
+function BuildingInfoMediator:InitData()
+    self.curBuilding = self.planetaryProxy:GetCurBuildingOper()
+
+    local buildingConfigData = self.planetaryProxy:GetBuildingConifData(self.curBuilding.configId)
+    local name = buildingConfigData.data[buildingConfigData.EVar["bldg_name_s"]]
+    local level = buildingConfigData.data[buildingConfigData.EVar["bldg_lvl_n"]]
+    local maxLevel = buildingConfigData.data[buildingConfigData.EVar["max_bldg_lvl_n"]]
+    local funcType = buildingConfigData.data[buildingConfigData.EVar["bldg_func_type_n"]]
+
+    -- set dynamic text key by name
+    self.m_viewComponent.uiBinder.m_Label_TitleKey.text = GetLanguageText("BuildingAttribute", name)   --建筑名
+    self.m_viewComponent.uiBinder.m_LabelKey2.text = GetLanguageText(name, name.."Employee")       --英雄
+    self.m_viewComponent.uiBinder.m_Label_SbLvTitle1.text = GetLanguageText(name, name.."LvV")    --建筑信息标题1
+    self.m_viewComponent.uiBinder.m_Label_SbLvKey1.text = GetLanguageText(name, name.."LvN")
+    self.m_viewComponent.uiBinder.m_Label_SbLvTitle2.text = GetLanguageText(name, name.."NumV")
+    self.m_viewComponent.uiBinder.m_Label_SbLvKey2.text = GetLanguageText(name, name.."NumN")
+    self.m_viewComponent.uiBinder.m_Label_DitelNameTitle1.text = GetLanguageText(name, name.."DescriptionTitle")
+    self.m_viewComponent.uiBinder.m_Label_DitelaiKey.text = GetLanguageText("BuildingAttribute", name .. "Dtl")    --建筑描述
+    self.m_viewComponent.uiBinder.m_Label_DitelNameTitle2.text = GetLanguageText(name, name.."DetailTitle")
+    self.m_viewComponent.uiBinder.m_LabelLv.text = GetLanguageText(name, name.."TitleLv", level)
+
+    self.m_viewComponent.uiBinder.m_Label_SbLvKey1.text = string.format("%s/%s", level, maxLevel)
+    local buildingList = self.planetaryProxy:GetBuildingDataByType(funcType)
+    local techId = self.planetaryProxy:GetTechIdByconfigId(self.curBuilding.configId)
+    local techData = self.planetaryProxy:GetSkillTreeItemInConfig(techId)
+    local maxNum = techData.data[techData.EVar['uock_bldg_qty_n']]
+    self.m_viewComponent.uiBinder.m_Label_SbLvKey2.text = string.format("%s/%s", #buildingList, maxNum)
+
+    local type = self.planetaryProxy:GetBuildingType(self.curBuilding.configId)
+    if type == common_pb.POWERPLANT then
+        local max_ele_cap = buildingConfigData.data[buildingConfigData.EVar['max_ele_cap_n']]
+        max_ele_cap = math.floor(self.planetaryProxy:GetValueAfterAddition(max_ele_cap,"BUILDING","max_ele_cap"))
+        local ele_regen_rate = buildingConfigData.data[buildingConfigData.EVar['ele_regen_rate_n']]
+        ele_regen_rate = math.floor(self.planetaryProxy:GetValueAfterAddition(ele_regen_rate,"BUILDING","ele_regen_rate"))
+        local affact_rng = buildingConfigData.data[buildingConfigData.EVar['affact_rng_n']]
+        affact_rng = math.floor(self.planetaryProxy:GetValueAfterAddition(affact_rng,"BUILDING","affact_rng"))
+      
+        -- self.m_viewComponent.uiBinder.m_Label1.text = GetLanguageText("PowerStation","StatsGenerationInfo", max_ele_cap)
+        -- self.m_viewComponent.uiBinder.m_Label2.text = GetLanguageText("PowerStation","StatsPowerLimitInfo", ele_regen_rate)
+        -- self.m_viewComponent.uiBinder.m_Label3.text = GetLanguageText("PowerStation","StatsTransmissionInfo", affact_rng)
+        
+        -- self.m_viewComponent.uiBinder.m_Label_Ditelaikey2.gameObject:SetActive(true)
+        -- self.m_viewComponent.uiBinder.m_Label_Ditelaikey3.gameObject:SetActive(true)
+    elseif type == common_pb.ITEMSTG then
+        local configData = self.planetaryProxy:GetBuildingConifData(self.curBuilding.configId)
+        local max_item_cap = configData.data[configData.EVar['max_item_cap_n']]
+        max_item_cap = math.floor(self.planetaryProxy:GetValueAfterAddition(max_item_cap,"BUILDING","max_item_cap"))
+        -- self.m_viewComponent.uiBinder.m_Label1.text = GetLanguageText("PowerStation","StatsGenerationInfo", max_item_cap)
+        -- self.m_viewComponent.uiBinder.m_Label1.text = GetLanguageText("PowerStation","StatsGenerationInfo", configData.data[configData.EVar['max_item_cap_n']])
+        -- self.m_viewComponent.uiBinder.m_Label_Ditelaikey2.gameObject:SetActive(false)
+        -- self.m_viewComponent.uiBinder.m_Label_Ditelaikey3.gameObject:SetActive(false)
+    end
+    
+
+    for k,v in pairs(self.model) do
+        v:SetActive(false)
+    end
+
+    self.m_viewComponent.uiBinder.m_Model_Pos:SetActive(true)
+
+    local prefabName = buildingConfigData.data[buildingConfigData.EVar["prefab_name_s"]]
+    if self.model[prefabName] then
+        local buildingGo = self.model[prefabName]
+        buildingGo:SetActive(true)
+    else
+        local buildingPrefab = ManagerResourceModule.LuaLoadBundle(NotiConst.ModelFBX_ResPath..prefabName..'.prefab')
+        local buildingGo = UnityEngine.GameObject.Instantiate(buildingPrefab)
+        buildingGo.transform.parent = self.m_viewComponent.uiBinder.m_Object.transform
+        NGameObjectUtil.SetLocalPosition(buildingGo, 0, 0, 0)
+        NGameObjectUtil.SetLocalRotation(buildingGo, 0, 0, 0)
+        NGameObjectUtil.SetScale(buildingGo, 1, 1, 1)
+
+        self.model[prefabName] = buildingGo
+    end
+
+    --list view
+    self:SetBuildingInfoData(buildingConfigData, type)
+    Facade:SendNotification("BuildingInfoListRefresh",#self.buildingInfoData)
+end
+
+function BuildingInfoMediator:Close()
+    self.m_viewComponent.uiBinder.m_Model_Pos:SetActive(false)
+
+    Facade:BackPanel()
+end
+
+function BuildingInfoMediator:SetBuildingInfoData(buildingConfigData, buildingType)
+    local totalList = {}
+
+    local buildingAttributeExtractor = GlobalMap:Class("BuildingAttributeExtractor")
+    local baseAttributeList = buildingAttributeExtractor:GetBuildingBaseAttributeList()
+    local spAttributeList = buildingAttributeExtractor:GetBuildingSpAttributeList(buildingType)
+
+    if baseAttributeList ~= nil then
+        for key, val in pairs(baseAttributeList) do 
+            local tempList = {}
+            tempList.value = buildingConfigData.data[buildingConfigData.EVar[key]]
+            if tempList.value ~=0 then
+                if val.CNKeyV ~= nil then tempList.titleStr = GetLanguageText("BuildingAttribute", val.CNKeyV) end
+                if val.CNKeyN ~= nil then tempList.valueStr = GetLanguageText("BuildingAttribute", val.CNKeyN) end
+                table.insert(totalList, tempList)
+            end
+        end
+    end
+    
+    local spAttributeTable = _G["DATA_"..buildingConfigData.data[buildingConfigData.EVar["bldg_func_table_name_s"]]]
+
+    if spAttributeList ~= nil then
+        for key, val in pairs(spAttributeList) do
+            local tempList = {}
+            tempList.value = spAttributeList.data[spAttributeList.EVar[key]]
+            if val.CNKeyV ~= nil then tempList.titleStr = GetLanguageText("BuildingAttribute", val.CNKeyV) end
+            if val.CNKeyN ~= nil then tempList.valueStr = GetLanguageText("BuildingAttribute", val.CNKeyN) end
+            table.insert(totalList, tempList)
+        end
+        
+    end
+    self.buildingInfoData = totalList
+    print("buildingIndataCount:" .. #self.buildingInfoData)
+end
+
+return BuildingInfoMediator

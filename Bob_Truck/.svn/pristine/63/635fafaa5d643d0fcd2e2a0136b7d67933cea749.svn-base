@@ -1,0 +1,9 @@
+local languageMap = {
+    ["AcNWeapon1"] = "",
+    ["AcNShield1"] = "",
+    ["AcNThrusters1"] = "",
+    ["AcNWeapon1Dtl"] = "",
+    ["AcNShield1Dtl"] = "",
+    ["AcNThrusters1Dtl"] = "",
+}
+return languageMap

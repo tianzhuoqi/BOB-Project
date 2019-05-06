@@ -1,0 +1,14 @@
+#!/usr/bin/expect
+set timeout -1
+#set username [lindex $argv 0]
+set ip  [lindex $argv 0]
+set username [lindex $argv 1]
+set password   [lindex $argv 2]
+set source_file [lindex $argv  3]
+set to_path [lindex $argv 4]
+spawn scp $source_file  $username@$ip:$to_path
+expect {
+"(yes/no)?" {send "yes\r"; exp_continue}
+"password:" {send "$password\r"}
+}
+expect eof

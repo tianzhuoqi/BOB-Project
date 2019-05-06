@@ -1,0 +1,43 @@
+{
+	"iOS": {
+		"Overseas": {
+			"name": "iOS-AppStore",
+			"channel": "500026",
+			"fullname": "iOS-AppStore",
+			"bundleId": "com.nkm.kp.hw",
+			"productName": "Hyper Heroes",
+			"teamId": "BHYMN24KF4",
+			"profileId": "nkmhw_develop_2017",
+			"pushConfig": {
+				"APP_KEY": "4d59f913a562da35bac7d961",
+				"CHANNEL": "ios-海外AppStore"
+			},
+			"signInfo": {
+				"codeSignIdentify": "iPhone Developer: feng li (MKZ5XNH522)",
+				"exportPlist": "export_appstore.plist"
+			}
+		},
+		"Developer": {
+			"name": "iOS-AppStore",
+			"channel": "500026",
+			"fullname": "iOS-AppStore Developer",
+			"bundleId": "com.nkm.kp",
+			"productName": "Hyper Heroes",
+			"teamId": "K3G2K7L99P",
+			"profileId": "nkmkp_2017_develop",
+			"signInfo": {
+				"codeSignIdentify": "iPhone Developer: xiaoyu fan (32B59GAPP6)",
+				"exportPlist": "export_enterprise.plist"
+			}
+		}
+	},
+	"Android": {
+		"Overseas": {
+			"name": "Overseas",
+			"channel": "600001",
+			"fullname": "android-Overseas",
+			"bundleId": "com.nkm.kp.hh",
+			"productName": "Hyper Heroes"
+		}
+	}
+}

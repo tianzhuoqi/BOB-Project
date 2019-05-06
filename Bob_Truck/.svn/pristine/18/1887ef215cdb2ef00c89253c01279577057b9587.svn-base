@@ -1,0 +1,10 @@
+local languageMap = {
+    ["SoltScientist"] = "",
+    ["PrimaryBase"] = "",
+    ["BuldingDitel"] = "",
+    ["Stats"] = "",
+    ["SpaceBaseLv"] = "",
+    ["MessageBtn"] = "",
+    ["BuldingDitelKey"] = "",
+}
+return languageMap

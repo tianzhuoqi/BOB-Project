@@ -1,0 +1,39 @@
+local ListCell = require("Game/Module/UICommon/ListCell")
+
+local FormModelModListCell = register("FormModelModListCell", ListCell)
+
+function FormModelModListCell:Awake(gameObject)
+    FormModelModListCell.super.Awake(self, gameObject)
+
+    self.n_Label_Name = self:FindComponent("n_Label_Name", "UILabel")
+    self.n_IconItem1 = self:FindGameObject("n_IconItem1")
+    self.n_Sprite_Icon1 = self:FindComponent("n_IconItem1/n_Sprite_Icon1", "UISprite")
+    self.n_Sprite_Frame1 = self:FindComponent("n_IconItem1/n_Sprite_Frame1", "UISprite")
+    self.n_IconItem2 = self:FindGameObject("n_IconItem2")
+    self.n_Sprite_Icon2 = self:FindComponent("n_IconItem2/n_Sprite_Icon2", "UISprite")
+    self.n_Sprite_Frame2 = self:FindComponent("n_IconItem2/n_Sprite_Frame2", "UISprite")
+    self.n_IconItem3 = self:FindGameObject("n_IconItem3")
+    self.n_Sprite_Icon3 = self:FindComponent("n_IconItem3/n_Sprite_Icon3", "UISprite")
+    self.n_Sprite_Frame3 = self:FindComponent("n_IconItem3/n_Sprite_Frame3", "UISprite")
+    self.n_Label_Info1 = self:FindComponent("n_Label_Info1", "UILabel")
+    self.n_Label_Info2 = self:FindComponent("n_Label_Info2", "UILabel")
+    self.n_Button_Ok = self:FindComponent("n_Button_Ok", "UIButton")
+
+    local NLuaClickEvent = NLuaClickEvent.Get(self.n_Button_Ok.gameObject)
+    NLuaClickEvent:AddClick(self, self.Sure)
+
+    self.planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+end
+
+function FormModelModListCell:DrawCell(index)
+    self.dataIndex = index + 1
+    self.modData = self.planetaryProxy:GetShipModConfigDataByIndex(self.dataIndex)
+
+    self.n_Label_Name.text = self.modData.data[self.modData.EVar["mod_tech_name_s"]]
+end
+
+function FormModelModListCell:Sure()
+    Facade:SendNotification(NotiConst.Notify_FormModelChangeMod, self.dataIndex)
+end
+
+return FormModelModListCell

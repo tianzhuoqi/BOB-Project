@@ -1,0 +1,6 @@
+local GlobalPackage = {}
+
+GlobalPackage.systemTimestamp = 0
+GlobalPackage.timestampOffset = 0
+
+return GlobalPackage

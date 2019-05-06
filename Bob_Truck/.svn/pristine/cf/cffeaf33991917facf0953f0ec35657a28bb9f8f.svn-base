@@ -1,0 +1,17 @@
+local FleetGoodsPanelBinder = class("FleetGoodsPanelBinder");
+
+function FleetGoodsPanelBinder:ctor(gameObject)
+	local transform = gameObject.transform;
+	self.m_ButtonClose = transform:Find("m_ButtonClose"):GetComponent("UIButton");
+	self.m_bkgnd = transform:Find("m_bkgnd"):GetComponent("UITexture");
+	self.m_Title = transform:Find("m_Title"):GetComponent("UILabel");
+	self.m_GoodsTabView = transform:Find("m_GoodsTabView").gameObject;
+	self.m_ButtonReturn = transform:Find("m_ButtonReturn"):GetComponent("UILabel");
+	self.m_SetNum = transform:Find("m_SetNum").gameObject;
+	self.m_CloseSetNum = transform:Find("m_SetNum/m_CloseSetNum"):GetComponent("UIButton");
+	self.m_CutDown = transform:Find("m_SetNum/g0/m_CutDown"):GetComponent("UISprite");
+	self.m_Add = transform:Find("m_SetNum/g0/m_Add"):GetComponent("UISprite");
+	self.m_Editbox = transform:Find("m_SetNum/g0/m_Editbox"):GetComponent("UIInput");
+	self.m_ButtonSure = transform:Find("m_SetNum/m_ButtonSure"):GetComponent("UILabel");
+end
+return FleetGoodsPanelBinder

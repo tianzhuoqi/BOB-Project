@@ -1,0 +1,92 @@
+require("Proto/scene_pb")
+local ListCell = require("Game/Module/UICommon/ListCell")
+local ListItem = register("SkillTreeListCellItem", ListCell)
+local planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+function ListItem:OnClick()
+    if self.techId ~= nil and self.level < self.maxLevel then
+        if self.unlockData == nil or (self.unlockData ~= nil and self.unlockData.techStatus == 0) then
+            Facade:SendNotification("showUpgradePanel",self.techId)
+        end
+    end
+end
+
+function ListItem:Awake(gameObject)
+    ListItem.super.Awake(self, gameObject)
+    self.n_main = self:FindGameObject("n_main")
+    self.n_Sprite_Icon = self:FindComponent("n_main/n_Sprite_Icon", "UITexture")
+    self.n_Label_Level = self:FindComponent("n_main/n_Label_Level", "UILabel")
+    self.n_Label_Name = self:FindComponent("n_main/n_Label_Name", "UILabel")
+    self.n_Sprite_Ing = self:FindComponent("n_main/n_Sprite_Ing", "UISprite")
+
+    self.unlockData = nil
+end
+
+function ListItem:DrawCell(index, cellIndex, itemsCount)
+    self.dataIndex = cellIndex * itemsCount + index + 1
+    self.techId = planetaryProxy:GetShowSkillTreeItemIdByIndex(self.dataIndex)
+    if self.techId == nil then
+        self.n_main:SetActive(false)
+    else
+        self.n_main:SetActive(true)
+        local data = planetaryProxy:GetUnlockSkillTreeItemData(self.techId)
+        self.unlockData  = data
+        if data ~= nil then
+            self.techId = self.unlockData.techId
+        end
+        local techInfo = planetaryProxy:GetSkillTreeItemInConfig(self.techId)
+        self:ShowItemInfo(techInfo)
+    end
+
+end
+
+function ListItem:ShowItemInfo(techInfo)
+    local data = techInfo.data
+    local evar = techInfo.EVar
+    local name = data[evar["tech_name_s"]]
+    local iconName = data[evar["icon_name_s"]]
+
+    self.level = 0
+    if self.unlockData ~= nil then
+        if self.unlockData.techStatus == 0 then
+            self.level = self.techId % 100
+            self.n_Sprite_Ing.gameObject:SetActive(false)
+        else
+            self.level = self.techId % 100 - 1
+            self.n_Sprite_Ing.gameObject:SetActive(true)
+        end
+    else
+        self.n_Sprite_Ing.gameObject:SetActive(false)
+    end
+    self.maxLevel = planetaryProxy:GetSkillMaxLevelInConfig(self.techId)
+    local str = ""
+    if self.level < self.maxLevel and self:IsUnlock() then
+        str = string.format("[53ff8c]%d/%d",self.level,self.maxLevel)
+    else
+        str = string.format("[806356]%d/%d",self.level,self.maxLevel)
+    end
+    self.n_Label_Level.text = str
+    self.n_Label_Name.text = tostring(name)
+end
+
+function ListItem:IsUnlock()
+    local prerequisiteIds = nil
+    if self.level == 0 then
+        prerequisiteIds = planetaryProxy:GetPrerequisiteTechIds(self.techId)
+    end
+    if prerequisiteIds ~= nil then
+        for i,v in ipairs(prerequisiteIds) do
+            local techItem  = planetaryProxy:GetUnlockSkillTreeItemData(v)
+            if techItem == nil then
+                return false
+            else
+                local currentLevel = techItem.techId % 100
+                if currentLevel  <= 1 and techItem.techStatus == 1 then
+                    return false
+                end
+            end
+        end
+    end
+    return true
+    --TODO
+end
+return ListItem

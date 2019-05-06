@@ -1,0 +1,10 @@
+local languageMap = {
+    ["SoltScientist"] = "雇员",
+    ["PrimaryBase"] = "主基地",
+    ["BuldingDitel"] = "建筑信息",
+    ["Stats"] = "属性",
+    ["SpaceBaseLv"] = "Lv. {0}/{1}",
+    ["MessageBtn"] = "留言板",
+    ["BuldingDitelKey"] = "太空基地是在新的星系建设建筑的基础，它提供基础的电力供应、电力储存和仓储容量。",
+}
+return languageMap

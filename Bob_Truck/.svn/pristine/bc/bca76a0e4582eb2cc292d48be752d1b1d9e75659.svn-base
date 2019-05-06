@@ -1,0 +1,135 @@
+local ListCell = require("Game/Module/UICommon/ListCell")
+
+local FleetPortItem2ListCell = register("FleetPortItem2ListCell", ListCell)
+
+function FleetPortItem2ListCell:Awake(gameObject)
+    FleetPortItem2ListCell.super.Awake(self, gameObject)
+
+    self.n_Label_Name = self:FindComponent("GameObject_ModelXX/n_Label_Name", "UILabel")
+    self.n_Label_Info1 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Label_Info1", "UILabel")
+    self.n_Label_Info2 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Label_Info2", "UILabel")
+    self.n_Label_Info3 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Label_Info3", "UILabel")
+    self.n_Label_Info4 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Label_Info4", "UILabel")
+    self.n_Label_Info5 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Label_Info5", "UILabel")
+    self.n_Label_Info6 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Label_Info6", "UILabel")
+    self.n_Label_Info7 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Label_Info7", "UILabel")
+    self.n_Sprite_Main1 = self:FindGameObject("GameObject_ModelXX/GameObject_Info/n_Sprite_Main1")
+    self.n_Sprite_MainIcon1 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main1/n_Sprite_MainIcon1", "UISprite")
+    self.n_Sprite_MainFrame1 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main1/n_Sprite_MainFrame1", "UISprite")
+    self.n_Sprite_MainSign1 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main1/n_Sprite_MainSign1", "UISprite")
+    self.n_Sprite_Main2 = self:FindGameObject("GameObject_ModelXX/GameObject_Info/n_Sprite_Main2")
+    self.n_Sprite_MainIcon2 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main2/n_Sprite_MainIcon2", "UISprite")
+    self.n_Sprite_MainFrame2 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main2/n_Sprite_MainFrame2", "UISprite")
+    self.n_Sprite_MainSign2 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main2/n_Sprite_MainSign2", "UISprite")
+    self.n_Sprite_Main3 = self:FindGameObject("GameObject_ModelXX/GameObject_Info/n_Sprite_Main3")
+    self.n_Sprite_MainIcon3 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main3/n_Sprite_MainIcon3", "UISprite")
+    self.n_Sprite_MainFrame3 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main3/n_Sprite_MainFrame3", "UISprite")
+    self.n_Sprite_MainSign3 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main3/n_Sprite_MainSign3", "UISprite")
+    self.n_Sprite_Main4 = self:FindGameObject("GameObject_ModelXX/GameObject_Info/n_Sprite_Main4")
+    self.n_Sprite_MainIcon4 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main4/n_Sprite_MainIcon4", "UISprite")
+    self.n_Sprite_MainFrame4 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main4/n_Sprite_MainFrame4", "UISprite")
+    self.n_Sprite_MainSign4 = self:FindComponent("GameObject_ModelXX/GameObject_Info/n_Sprite_Main4/n_Sprite_MainSign4", "UISprite")
+    self.n_Sprite_Warship = self:FindComponent("GameObject_ModelXX/n_Sprite_Warship", "UISprite")
+    self.n_Button_Edit = self:FindComponent("GameObject_ModelXX/n_Button_Edit", "UIButton")
+    self.n_Button_Refit = self:FindComponent("GameObject_ModelXX/n_Button_Refit", "UIButton")
+
+    self.view = {}
+    table.insert(self.view, {obj = self.n_Sprite_Main1, icon = self.n_Sprite_MainIcon1, frame = self.n_Sprite_MainFrame1, sign = self.n_Sprite_MainSign1})
+    table.insert(self.view, {obj = self.n_Sprite_Main2, icon = self.n_Sprite_MainIcon2, frame = self.n_Sprite_MainFrame2, sign = self.n_Sprite_MainSign2})
+    table.insert(self.view, {obj = self.n_Sprite_Main3, icon = self.n_Sprite_MainIcon3, frame = self.n_Sprite_MainFrame3, sign = self.n_Sprite_MainSign3})
+    table.insert(self.view, {obj = self.n_Sprite_Main4, icon = self.n_Sprite_MainIcon4, frame = self.n_Sprite_MainFrame4, sign = self.n_Sprite_MainSign4})
+
+    local NLuaClickEvent = NLuaClickEvent.Get(self.n_Button_Edit.gameObject)
+    NLuaClickEvent:AddClick(self, self.EditModel)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.n_Button_Refit.gameObject)
+    NLuaClickEvent:AddClick(self, self.Refit)
+
+    self.planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+    self.storehouseProxy = Facade:RetrieveProxy(NotiConst.Proxy_Storehouse)
+
+    self.curBuilding = self.planetaryProxy:GetCurBuildingOper()
+end
+
+function FleetPortItem2ListCell:DrawCell(index)
+    self.dataIndex = index + 1
+    self.data = self.planetaryProxy:GetUserModByIndex(self.dataIndex)
+
+    self.n_Label_Name.text = self.data.modName
+
+    self.material = {}
+
+    for i=1,#self.data.cpntMats do
+        local cpntId = self.data.cpntMats[i]
+        if self.material[cpntId] == nil then
+            self.material[cpntId] = 0
+        end
+        self.material[cpntId] = self.material[cpntId] + 1
+
+        self.view[i].obj:SetActive(true)
+
+        local cnptData = self.planetaryProxy:GetShipCpntConfigDataById(cpntId)
+    end
+
+    for i=(#self.data.cpntMats+1),4 do
+        self.view[i].obj:SetActive(false)
+    end
+
+    for i=1,#self.data.hullParts do
+        local hull = self.data.hullParts[i]
+        if self.material[hull.hullId] == nil then
+            self.material[hull.hullId] = 0
+        end
+        self.material[hull.hullId] = self.material[hull.hullId] + 1
+    end
+
+    self.nodeId = self.planetaryProxy:GetPlanetaryId()
+    self.count = self:CalcCount()
+    self.n_Label_Info7.text = self.count
+end
+
+function FleetPortItem2ListCell:CalcCount()
+    local maxCount = 99999999
+    for i,v in pairs(self.material) do
+        local itemData = self.storehouseProxy:GetItem(self.nodeId, i)
+        if itemData == nil then
+            maxCount = 0
+            break
+        end
+
+        local count = math.floor(itemData.num/v)
+        if count < maxCount then
+            maxCount = count
+        end
+
+        if maxCount == 0 then
+            break
+        end
+    end
+    return maxCount
+end
+
+--编辑
+function FleetPortItem2ListCell:EditModel()
+    local index = self.dataIndex
+    local userModData = self.planetaryProxy:GetUserModByIndex(index)
+    self.curBuilding = self.planetaryProxy:GetCurBuildingOper()
+    
+    self.curBuilding.dynamicData.modelId = userModData.id
+    self.curBuilding.dynamicData.mod = userModData
+    self.curBuilding.dynamicData.type = 1
+
+    Facade:ReplacePanel("FormModelPanel")
+end
+
+--改装
+function FleetPortItem2ListCell:Refit()
+    local index = self.dataIndex
+    local userModData = self.planetaryProxy:GetUserModByIndex(index)
+    self.curBuilding = self.planetaryProxy:GetCurBuildingOper()
+    self.curBuilding.dynamicData.modelId = userModData.id
+    self.curBuilding.dynamicData.mod = userModData
+    Facade:ReplacePanel("FormRefitPanel")
+end
+
+return FleetPortItem2ListCell

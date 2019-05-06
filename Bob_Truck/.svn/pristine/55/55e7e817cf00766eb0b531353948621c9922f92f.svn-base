@@ -1,0 +1,10 @@
+local languageMap = {
+    ["SoltScientist"] = "Employee",
+    ["PrimaryBase"] = "Primary Base",
+    ["BuldingDitel"] = "Bulding Ditel",
+    ["Stats"] = "Stats",
+    ["SpaceBaseLv"] = "Lv. {0}/{1}",
+    ["MessageBtn"] = "Message Board",
+    ["BuldingDitelKey"] = "Space base is the foundation for building infrastructure in a new galaxy, providing basic power supplies,power storage capacity and warehouse capacity.",
+}
+return languageMap

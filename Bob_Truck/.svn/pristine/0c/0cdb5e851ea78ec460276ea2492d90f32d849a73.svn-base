@@ -1,0 +1,13 @@
+local languageMap = {
+    ["WCRCapacityV"] = "Capacity",
+    ["WCRCapacityN"] = "{0}m³/{1}m³",
+    ["WCRMineralTab"] = "Mineral",
+    ["WCRIntermediateTab"] = "Intermediate",
+    ["WCRProductTab"] = "Product",
+    ["WCROthersTab"] = "Others",
+    ["WCRsSubMaxBtn"] = "Max",
+    ["WCRsSubCancelBtn"] = "Cancel",
+    ["WCRsSubSellBtn"] = "Sell",
+    ["WCRsSubConsumeBtn"] = "Consume",
+}
+return languageMap

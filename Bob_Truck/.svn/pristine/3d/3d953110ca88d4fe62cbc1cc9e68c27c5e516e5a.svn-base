@@ -1,0 +1,40 @@
+local FleetDisbandMediator = require("Game/Module/SPlanetary/FleetDisbandMediator")
+local FleetDisbandPanel = register("FleetDisbandPanel", PanelBase)
+local FleetDisbandPanelBinder = require("UIDef/FleetDisbandPanelBinder");
+
+function FleetDisbandPanel:Awake(gameObject)
+    self.gameObject = gameObject
+    self:InitView();
+
+    self.mediator = FleetDisbandMediator.New(NotiConst.FleetDisbandMediator)
+    self.mediator:SetViewComponent(self)
+	Facade:RegisterMediator(self.mediator)
+end
+
+function FleetDisbandPanel:InitView()
+    self.uiBinder = FleetDisbandPanelBinder.New(self.gameObject);
+
+    local NLuaClickEvent = NLuaClickEvent.Get(self.uiBinder.m_ButtonClose.gameObject)
+    NLuaClickEvent:AddClick(self, FleetDisbandPanel.ButtonCloseClick)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.uiBinder.m_Cancel.gameObject)
+    NLuaClickEvent:AddClick(self, FleetDisbandPanel.ButtonCloseClick)
+end
+
+function FleetDisbandPanel:ButtonCloseClick()
+    Facade:BackPanel()
+end
+
+function FleetDisbandPanel:OpenPanel()
+    FleetDisbandPanel.super.OpenPanel(self)
+
+    self:DoBlur()
+
+    self.mediator:InitData()
+
+    local fleetProxy = Facade:RetrieveProxy(NotiConst.Proxy_Fleet)
+    local protFleetsData = fleetProxy:GetProtFleetsData()
+    Facade:SendNotification("FleetDisbandPanelNotify", #protFleetsData)
+end
+
+return FleetDisbandPanel

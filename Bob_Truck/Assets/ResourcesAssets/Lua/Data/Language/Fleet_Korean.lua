@@ -1,0 +1,23 @@
+local languageMap = {
+    ["FExploreTitle"] = "",
+    ["FExploreCCapabilities"] = "",
+    ["FExploreCPosition"] = "",
+    ["FExploreFuel"] = "",
+    ["FDirectiveTitle"] = "",
+    ["FDirectiveListName"] = "",
+    ["FDirectiveLim"] = "",
+    ["FDirectiveIngFleetName"] = "",
+    ["FDirectiveIngFleetWorking"] = "",
+    ["FDirectiveIngCancel"] = "",
+    ["FDirectiveSubName"] = "",
+    ["FDirectiveSubNum"] = "",
+    ["FDirectiveSubMiningSpeed"] = "",
+    ["FDirectiveSubMiningCap"] = "",
+    ["FListTitle"] = "",
+    ["FListOperateBtn"] = "",
+    ["FListFoldBtn"] = "",
+    ["FListLookOver"] = "",
+    ["FTip01"] = "",
+    ["FTip02"] = "",
+}
+return languageMap

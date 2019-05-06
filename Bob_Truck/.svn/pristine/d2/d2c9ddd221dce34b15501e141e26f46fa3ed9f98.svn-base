@@ -1,0 +1,253 @@
+local BuildingUpgradeMediator = class("BuildingUpgradeMediator", MediatorDynamic)
+
+function BuildingUpgradeMediator:OnRegister()
+    self.planetaryProxy = Facade:RetrieveProxy(NotiConst.Proxy_Planetary)
+    self.storehouseProxy = Facade:RetrieveProxy(NotiConst.Proxy_Storehouse)
+
+    local NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_btnSClose.gameObject)
+    NLuaClickEvent:AddClick(self, self.Close)
+
+    NLuaClickEvent = NLuaClickEvent.Get(self.m_viewComponent.uiBinder.m_btnUpgrade.gameObject)
+    NLuaClickEvent:AddClick(self, self.Upgrade)
+
+    ManagerNetMsgProcInst:AddS2CMsgListener(common_pb.NETTYPELOBBY, RpcResponseCMDID(common_pb.BUILDINGLEVELUP), self.OnUpgrade, self)
+end
+
+function BuildingUpgradeMediator:InitData()
+    self.curBuilding = self.planetaryProxy:GetCurBuildingOper()
+
+    local from = self.planetaryProxy:GetBuildingConifData(self.curBuilding.configId)
+    local funcType = from.data[from.EVar["bldg_func_type_n"]]
+    local fromLevel = from.data[from.EVar["bldg_lvl_n"]]
+    local to = self.planetaryProxy:GetMaxBuildingConifData(funcType, fromLevel)
+    if to.data == nil then
+        to = from
+    end
+    self.toConfigId = to.configId
+
+    local name = from.data[from.EVar["bldg_name_s"]]
+    local actualName = self.planetaryProxy:GetBuildingActualNameByName(name)
+    self.m_viewComponent.uiBinder.m_Label_TitleKey.text = string.format("[%s] upgrade", actualName)
+
+    local toLevel = to.data[to.EVar["bldg_lvl_n"]]
+    self.m_viewComponent.uiBinder.m_Label_UpInquiry.text = string.format("Are you sure to upgrade to Lv%d?", toLevel)
+
+    self.m_viewComponent.uiBinder.m_Label_BuildNumL.text = string.format("Lv.%d", fromLevel)
+    self.m_viewComponent.uiBinder.m_Label_BuildNumR.text = string.format("Lv.%d", toLevel)
+
+    local timeCost = 0
+    local resCost = {}
+    for i=fromLevel+1,toLevel do
+        local configData = self.planetaryProxy:GetBuildingConfigDataByLevel(funcType, i)
+        timeCost = timeCost + configData.data[configData.EVar["time_cost_n"]]
+
+        local cost_table = configData.data[configData.EVar["cost_table_repeated5"]]
+        for i,v in ipairs(cost_table) do
+            local itemId = v[1]
+            if itemId ~= nil and itemId > 0 then
+                if resCost[itemId] == nil then
+                    resCost[itemId] = v[2]
+                else
+                    resCost[itemId] = resCost[itemId] + v[2]
+                end
+            end
+        end
+    end
+
+    self.m_viewComponent.uiBinder.m_Label_Timer.text = timeCost
+
+    self.View = {}
+    table.insert(self.View, { DzName = self.m_viewComponent.uiBinder.m_Label_DzName01, Num = self.m_viewComponent.uiBinder.m_Label_Num01})
+    table.insert(self.View, { DzName = self.m_viewComponent.uiBinder.m_Label_DzName02, Num = self.m_viewComponent.uiBinder.m_Label_Num02})
+    table.insert(self.View, { DzName = self.m_viewComponent.uiBinder.m_Label_DzName03, Num = self.m_viewComponent.uiBinder.m_Label_Num03})
+    table.insert(self.View, { DzName = self.m_viewComponent.uiBinder.m_Label_DzName04, Num = self.m_viewComponent.uiBinder.m_Label_Num04})
+    table.insert(self.View, { DzName = self.m_viewComponent.uiBinder.m_Label_DzName05, Num = self.m_viewComponent.uiBinder.m_Label_Num05})
+
+    local count = 0
+    for i,v in pairs(resCost) do
+        local itemConfigData = self.storehouseProxy:GetItemConfigData(i)
+        if itemConfigData ~= nil and v>0 then
+            count = count + 1
+            local view = self.View[count]
+            view.DzName.gameObject:SetActive(true)
+            local name_s = itemConfigData.relation["name_s"]
+            view.DzName.text = itemConfigData.data[itemConfigData.EVar[name_s]]..":"
+            view.Num.text = v
+        end
+    end
+
+    count = count + 1
+    for i = count,5 do
+        self.View[i].DzName.gameObject:SetActive(false)
+    end
+
+    self:SetUpgradeEffectsData(from,to)
+    Facade:SendNotification("BuildingUpgradeListRefresh",#self.upgradeEffects)
+end
+
+-- 建筑升级需要显示属性的变化
+-- 属性分为通用属性(baseKey)和特有属性()分别进行加载
+function BuildingUpgradeMediator:SetUpgradeEffectsData(from,to)
+
+    local list = {}
+    
+    local buildingName = from.data[from.EVar["bldg_name_s"]]
+
+    local baseKeyTest = {
+        bldg_size_n = {
+            CNKeyV = "ATRBBuildingArea"
+        },
+        cult_pt_n = {
+            CNKeyV = "ATRBCivilization"
+        },
+        hr_slot_qty_n = {
+            CNKeyV = "ATRBHumanSlot"
+        },
+        buff_pro_n = {
+            CNKeyV = "ATRBBtP"
+        },
+        max_labor_uk_n = {
+            CNKeyV = "ATRBEmployeeLim"
+        },
+        ele_regen_rate_n = {
+            CNKeyV = "ATRBChargeV",
+            CNKeyN = "ATRBChargeN"
+        },
+        max_ele_cap_n = {
+            CNKeyV = "ATRBCapV",
+            CNKeyN = "ATRBCapN"
+        },
+        max_item_cap_n = {
+            CNKeyV = "ATRBCapacityV",
+            CNKeyN = "ATRBCapacityN"
+        },
+        affact_rng_n = {
+            CNKeyV = "ATRBRangeV",
+            CNKeyN = "ATRBRangeN"
+        },
+    }
+
+    for k, v in pairs(baseKeyTest) do
+        local temp = {
+            oldValue = from.data[from.EVar[k]],
+            newValue = to.data[to.EVar[k]],
+        }
+        if k == "ele_regen_rate_n" or k == "max_ele_cap_n" or k == "affact_rng_n" or k == "max_item_cap_n" then
+            local key = string.sub(k,1,string.len(k) - 2)
+            temp.newValue = self.planetaryProxy:GetValueAfterAddition(temp.newValue,"BUILDING",key)
+            temp.oldValue = self.planetaryProxy:GetValueAfterAddition(temp.oldValue,"BUILDING",key)
+        end
+        if temp.newValue - temp.oldValue ~= 0 then
+            if v.CNKeyV ~= nil then 
+                temp.infoTitleStr = GetLanguageText("BuildingAttribute", v.CNKeyV)
+            end
+            if v.CNKeyN ~= nil then 
+                temp.infoValueStr = GetLanguageText("BuildingAttribute", v.CNKeyN)
+            end
+            table.insert(list,temp)
+        end
+    end
+
+    local tableName = to.data[to.EVar["bldg_func_table_name_s"]]
+    local tableData = _G["DATA_"..tableName]
+    -- get cn keys
+    --TODO
+    local CNKeysList = self:GetCNKeysByBuildingName(buildingName)
+    if tableData then
+        local levelFrom = from.data[from.EVar["bldg_lvl_n"]]
+        local levelTo = to.data[to.EVar["bldg_lvl_n"]]
+        if tableData then
+            local kName = tableData.EVar
+            local CNKeysIdx = 0
+            for k,i in pairs(kName) do
+                local temp = {
+                    oldValue = tableData[levelFrom][i],
+                    newValue = tableData[levelTo][i],
+                    name = k
+                }
+                if type(temp.newValue) ~= "table" and temp.newValue - temp.oldValue ~= 0 and CNKeysList ~= nil and CNKeysList[CNKeysIdx] ~= nil then
+                    temp.infoTitleStr = GetLanguageText("BuildingAttribute", CNKeysList[CNKeysIdx].CNKeyV)
+                    temp.infoValueStr = GetLanguageText("BuildingAttribute", CNKeysList[CNKeysIdx].CNKeyN)
+                    table.insert(list,temp)
+                end
+                CNKeysIdx = CNKeysIdx + 1
+            end
+        end
+    end
+    
+    self.upgradeEffects = list
+end
+
+function BuildingUpgradeMediator:Close()
+    Facade:BackPanel()
+end
+
+--升级建筑
+function BuildingUpgradeMediator:Upgrade()
+    local isCanUpgrade = self.planetaryProxy:IsBuildingUnlockedByTech(self.toConfigId)
+    if isCanUpgrade == false then
+        OpenMessageBox(NotiConst.MessageBoxType.Tip,"相关科技等级不足")
+        return
+    end
+    local TCSBuildingLevelUp = building_pb.TCSBuildingLevelUp()
+    TCSBuildingLevelUp.buildingId = self.curBuilding.targetBuilding
+    TCSBuildingLevelUp.temporary = 0
+    TCSBuildingLevelUp.buildingConfigId = self.toConfigId
+    NNetMgrInst:SendLuaNetMsg(common_pb.NETTYPELOBBY, common_pb.BUILDINGLEVELUP, TCSBuildingLevelUp:SerializeToString())
+end
+
+function BuildingUpgradeMediator:OnUpgrade(btsData)
+    if btsData == nil then 
+        LogDebug("BuildingUpgradeMediator:OnUpgrade btsData==nil")
+        return
+    end
+
+    local TSCBuildingLevelUp = building_pb.TSCBuildingLevelUp()
+    TSCBuildingLevelUp:MergeFromString(btsData)
+    if TSCBuildingLevelUp.result then
+        Facade:SendNotification(NotiConst.Notify_BuildingUpgrade, TSCBuildingLevelUp.building)
+        --更新仓库数据
+        self.storehouseProxy:UseItemByDatas(self.planetaryProxy:GetPlanetaryId(), TSCBuildingLevelUp.items)
+        self:Close()
+    else
+        LogError("TSCBuildingLevelUp:OnUpgrade Failed")
+    end
+end
+
+-- 返回不同建筑特有的属性的CNKey
+function BuildingUpgradeMediator:GetCNKeysByBuildingName(name)
+    if name == "SB" then
+    elseif name == "Sp" then
+        return {
+            {CNKeyV = "ATRBBerthV", CNKeyN = "ATRBBerthN"},
+            {CNKeyV = "ATRBRepairV", CNKeyN = "ATRBRepairN"},
+        }
+    elseif name == "HP" then
+        return {
+            {CNKeyV = "ATRBProV", CNKeyN = nil},
+            {CNKeyV = "ATRBCollectV", CNKeyN = nil},
+        }
+    elseif name == "AC" then
+    elseif name == "AP" then
+        return {
+            {CNKeyV = "ATRBProV", CNKeyN = nil},
+            {CNKeyV = "ATRBCollectV", CNKeyN = nil},
+        }
+    elseif name == "MS" then
+        return {
+            {CNKeyV = "ATRBMiningV", CNKeyN = nil},
+            nil,
+            {CNKeyV = "ATRBCollectV", CNKeyN = nil},
+        }
+    elseif name == "Rf" then
+        return {
+            {CNKeyV = "ATRBRRefiningV", CNKeyN = nil},
+            {CNKeyV = "ATRBCollectV", CNKeyN = nil},
+        }
+    elseif name == "PS" then
+    elseif name == "WC" then
+    end
+    return nil
+end
+
+return BuildingUpgradeMediator

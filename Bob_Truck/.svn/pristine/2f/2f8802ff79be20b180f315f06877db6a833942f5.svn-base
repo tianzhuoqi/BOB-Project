@@ -1,0 +1,32 @@
+Version 1.23
+Update required for anyone with NGUI version 3.6.7+
+
+Version 1.22
+Updated core plugin to version 1.75
+
+Version 1.21
+Updated core plugin to version 1.74
+
+Version 1.2
+Centred depth number
+Added multiple icons to show a different for each panel and the widgets drawn by this panel.
+Check out the ReadMe file for more info
+
+Version 1.1
+Added ReadMe file with some important information about the use of this plugin
+
+Version 1.0
+
+ - Show an icon in the hierarchy for all NGUI panels and widgets
+ - Show an icon in the hierarchy wherever you have a sprite renderer
+ - Show layer order number in the hierarchy wherever you have a sprite renderer
+ - 6 preset icons for the most common layers
+ - Customize icons through an editor window
+ - Customize order number font colour through editor window
+ - click on layer graphic to open all similar layers
+ - Editor window is now scrollable
+ - Click on Sorting layer name in editor window to select all objects on that layer
+
+
+
+
